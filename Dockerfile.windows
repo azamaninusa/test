@@ -43,7 +43,8 @@ COPY VaxCare.Tests\ .\VaxCare.Tests\
 COPY VaxCare.UnitTests\ .\VaxCare.UnitTests\
 
 # Update appsettings.json to enable headless mode for Docker
-RUN powershell -Command "$json = Get-Content .\VaxCare.Tests\appsettings.json | ConvertFrom-Json; $json.WebDriverSettings.Headless = $true; $json | ConvertTo-Json -Depth 10 | Set-Content .\VaxCare.Tests\appsettings.json"
+# Escape $ as $$ in Dockerfile to prevent variable substitution
+RUN powershell -Command "$$json = Get-Content .\VaxCare.Tests\appsettings.json | ConvertFrom-Json; $$json.WebDriverSettings.Headless = $$true; $$json | ConvertTo-Json -Depth 10 | Set-Content .\VaxCare.Tests\appsettings.json"
 
 # Restore and build the solution
 RUN dotnet restore && dotnet build -c Release
