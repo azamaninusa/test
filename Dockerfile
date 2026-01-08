@@ -100,6 +100,7 @@ ENV DISPLAY=:99
 RUN mkdir -p /app/TestResults/html
 
 # Create wrapper script to run tests and generate HTML report
+# This script ensures HTML report is generated regardless of test pass/fail status
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -107,26 +108,32 @@ set -e\n\
 cd /app\n\
 \n\
 # Run tests with TRX report generation\n\
+# Capture exit code so we can still generate report even if tests fail\n\
 echo "========================================="\n\
 echo "  Running tests..."\n\
 echo "========================================="\n\
-dotnet test -c Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory /app/TestResults "$@"\n\
+TEST_EXIT_CODE=0\n\
+dotnet test -c Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory /app/TestResults "$@" || TEST_EXIT_CODE=$?\n\
 \n\
-# Generate HTML report from TRX file\n\
+# Always generate HTML report from TRX file, regardless of test results\n\
 echo ""\n\
 echo "========================================="\n\
 echo "  Generating HTML report..."\n\
 echo "========================================="\n\
 if [ -f "/app/TestResults/TestResults.trx" ]; then\n\
     cd /app\n\
-    python3 generate-html-report.py\n\
+    python3 generate-html-report.py || echo "Warning: Failed to generate HTML report"\n\
     if [ -f "/app/TestResults/html/TestReport.html" ]; then\n\
         echo ""\n\
         echo "✓ HTML report generated successfully!"\n\
         echo "  Location: /app/TestResults/html/TestReport.html"\n\
         echo ""\n\
         echo "========================================="\n\
-        echo "  Test Run Complete!"\n\
+        if [ $TEST_EXIT_CODE -eq 0 ]; then\n\
+            echo "  Test Run Complete - All Tests Passed!"\n\
+        else\n\
+            echo "  Test Run Complete - Some Tests Failed!"\n\
+        fi\n\
         echo "========================================="\n\
         echo ""\n\
         # Create a script in TestResults that host can execute to open the report\n\
@@ -154,6 +161,9 @@ fi\n\
 else\n\
     echo "Warning: TestResults.trx not found, skipping HTML report generation"\n\
 fi\n\
+\n\
+# Exit with the original test exit code so container status reflects test results\n\
+exit $TEST_EXIT_CODE\n\
 ' > /app/run-tests-and-report.sh && chmod +x /app/run-tests-and-report.sh
 
 # Selenium 4.x will automatically use selenium-manager to download the correct ChromeDriver
