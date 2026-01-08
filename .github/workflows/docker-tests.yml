@@ -1,0 +1,223 @@
+name: Docker Tests - Parallel Execution
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Test filter (e.g., FullyQualifiedName~Portal)'
+        required: false
+        default: ''
+
+env:
+  DOCKER_IMAGE: vaxcare-tests
+  DOCKERFILE: Dockerfile
+
+jobs:
+  # Build Docker image once and push to cache
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ env.DOCKERFILE }}
+          tags: ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+          push: false
+
+      - name: Save Docker image
+        run: |
+          docker save ${{ env.DOCKER_IMAGE }}:latest | gzip > docker-image.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: docker-image.tar.gz
+          retention-days: 1
+
+  # Run tests in parallel using matrix strategy
+  test:
+    name: Run Tests - ${{ matrix.test_name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # Continue running other jobs even if one fails
+      matrix:
+        include:
+          - test_name: "Portal Tests"
+            test_filter: "FullyQualifiedName~Portal"
+          - test_name: "DataEntry Tests"
+            test_filter: "FullyQualifiedName~DataEntry"
+          - test_name: "Google Search Test"
+            test_filter: "FullyQualifiedName~GoogleSearchTest"
+          - test_name: "All Tests"
+            test_filter: ""
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load Docker image
+        run: |
+          docker load < docker-image.tar.gz
+
+      - name: Create test results directory
+        run: |
+          mkdir -p TestResults/"${{ matrix.test_name }}"
+
+      - name: Run tests in Docker
+        id: run_tests
+        continue-on-error: true
+        run: |
+          FILTER_ARG=""
+          if [ -n "${{ matrix.test_filter }}" ]; then
+            FILTER_ARG="--filter ${{ matrix.test_filter }}"
+          fi
+          
+          docker run --rm \
+            --name vaxcare-tests-"${{ matrix.test_name }}" \
+            -v "${{ github.workspace }}/TestResults/${{ matrix.test_name }}:/app/TestResults" \
+            ${{ env.DOCKER_IMAGE }}:latest \
+            $FILTER_ARG
+
+      - name: Check test results
+        if: steps.run_tests.outcome == 'failure'
+        run: |
+          echo "Tests failed for ${{ matrix.test_name }}"
+          exit 1
+
+      - name: Upload TRX report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trx-report-${{ matrix.test_name }}
+          path: TestResults/${{ matrix.test_name }}/TestResults.trx
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report-${{ matrix.test_name }}
+          path: TestResults/${{ matrix.test_name }}/html/TestReport.html
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload all test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test_name }}
+          path: TestResults/${{ matrix.test_name }}
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # Merge test results and generate combined report
+  merge-results:
+    name: Merge Test Results
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()  # Run even if some tests fail
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: AllTestResults
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate combined HTML report
+        run: |
+          # Create combined reports directory
+          mkdir -p CombinedReports/html
+          
+          # Copy generate-html-report.py script
+          cp generate-html-report.py CombinedReports/ || true
+          
+          # Find all TRX files and generate combined report
+          # For now, we'll use the first available report generator
+          # You can enhance this to merge multiple TRX files
+          if [ -f "AllTestResults/Portal Tests/TestResults.trx" ]; then
+            cd CombinedReports
+            mkdir -p TestResults
+            cp "../AllTestResults/Portal Tests/TestResults.trx" TestResults/TestResults.trx
+            python3 ../generate-html-report.py || true
+            mv TestResults/html/TestReport.html html/CombinedTestReport.html 2>/dev/null || true
+          fi
+
+      - name: Upload combined report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-test-report
+          path: CombinedReports
+          retention-days: 90
+
+  # Publish test results summary
+  publish-results:
+    name: Publish Test Results
+    needs: [test, merge-results]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all HTML reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: html-report-*
+          merge-multiple: true
+          path: Reports
+
+      - name: Download combined report
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-test-report
+          path: CombinedReports
+          if-no-files-found: ignore
+
+      - name: Test Results Summary
+        run: |
+          echo "## 🧪 Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Suites Executed:" >> $GITHUB_STEP_SUMMARY
+          echo "- Portal Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- DataEntry Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Google Search Test" >> $GITHUB_STEP_SUMMARY
+          echo "- All Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Reports Available:" >> $GITHUB_STEP_SUMMARY
+          echo "Check the Artifacts section for detailed HTML reports." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Parallel Execution:" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Tests ran in parallel using Docker containers" >> $GITHUB_STEP_SUMMARY
+          echo "✅ XUnit parallel execution enabled in test project" >> $GITHUB_STEP_SUMMARY
+
