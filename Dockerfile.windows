@@ -1,0 +1,65 @@
+# Stage 1: Get Chrome from Windows Docker image
+# Note: selenium/node-chrome uses Linux, so we'll install Chrome directly on Windows
+# FROM selenium/node-chrome:latest AS chrome-source
+
+# Stage 2: Use .NET 8.0 SDK Windows base image
+FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022
+
+# Install Chocolatey (Windows package manager)
+USER ContainerAdministrator
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command \
+    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); \
+    Write-Host 'Chocolatey installed successfully'
+
+# Install Chrome using Chocolatey
+RUN choco install googlechrome -y --no-progress --accept-license --ignore-checksums
+
+# Selenium 4.x will use selenium-manager to download ChromeDriver automatically
+# Chrome will be installed at: C:\Program Files\Google\Chrome\Application\chrome.exe
+
+# Set working directory
+WORKDIR C:\app
+
+# Copy solution file
+COPY *.sln ./
+
+# Copy project files (for better layer caching)
+COPY VaxCare.ApiClient\*.csproj .\VaxCare.ApiClient\
+COPY VaxCare.Core\*.csproj .\VaxCare.Core\
+COPY VaxCare.Data\*.csproj .\VaxCare.Data\
+COPY VaxCare.Pages\*.csproj .\VaxCare.Pages\
+COPY VaxCare.Tests\*.csproj .\VaxCare.Tests\
+COPY VaxCare.Tests\appsettings.json .\VaxCare.Tests\
+COPY VaxCare.UnitTests\*.csproj .\VaxCare.UnitTests\
+
+# Copy all source files
+COPY VaxCare.ApiClient\ .\VaxCare.ApiClient\
+COPY VaxCare.Core\ .\VaxCare.Core\
+COPY VaxCare.Data\ .\VaxCare.Data\
+COPY VaxCare.Pages\ .\VaxCare.Pages\
+COPY VaxCare.Tests\ .\VaxCare.Tests\
+COPY VaxCare.UnitTests\ .\VaxCare.UnitTests\
+
+# Update appsettings.json to enable headless mode for Docker
+RUN powershell -Command \
+    (Get-Content .\VaxCare.Tests\appsettings.json) -replace '"Headless": false', '"Headless": true' | \
+    Set-Content .\VaxCare.Tests\appsettings.json
+
+# Restore and build the solution
+RUN dotnet restore && dotnet build -c Release
+
+# Set Chrome environment variables (Windows paths)
+ENV CHROME_BIN="C:\Program Files\Google\Chrome\Application\chrome.exe"
+ENV CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
+ENV CHROMEDRIVER_PATH="C:\Program Files\Google\Chrome\Application\chromedriver.exe"
+
+# Create reports directory
+RUN powershell -Command New-Item -ItemType Directory -Force -Path C:\app\TestResults | Out-Null
+
+# Selenium 4.x will automatically use selenium-manager to download the correct ChromeDriver
+# Set entrypoint and default command for running tests with report generation
+ENTRYPOINT ["dotnet", "test", "-c", "Release", "--verbosity", "normal", "--logger", "trx;LogFileName=TestResults.trx", "--results-directory", "C:\\app\\TestResults"]
+CMD ["--filter", "FullyQualifiedName~GoogleSearchTest"]
+
