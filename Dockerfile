@@ -4,7 +4,7 @@ FROM selenium/node-chrome:latest AS chrome-source
 # Stage 2: Use .NET 8.0 SDK as base image
 FROM mcr.microsoft.com/dotnet/sdk:8.0
 
-# Install common tools
+# Install common tools including Python for HTML report generation
 # IF YOU WANT TO DECREASE IMAGE'S SIZE, REMOVE THE UNNECESSARY TOOLS FROM THIS COMMAND
 # Use a backslash (\), if you want to break up a command to more than one line.
 # The command "rm -rf /var/lib/apt/lists/*" removes redundant files from a given layer
@@ -12,6 +12,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0
 RUN apt-get update \
     && apt-get -y install curl \
     && apt-get -y install wget \
+    && apt-get -y install python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install packages required by Chrome
@@ -80,6 +81,9 @@ COPY VaxCare.Pages/ ./VaxCare.Pages/
 COPY VaxCare.Tests/ ./VaxCare.Tests/
 COPY VaxCare.UnitTests/ ./VaxCare.UnitTests/
 
+# Copy HTML report generation script
+COPY generate-html-report.py ./
+
 # Update appsettings.json to enable headless mode for Docker
 RUN sed -i 's/"Headless": false/"Headless": true/' VaxCare.Tests/appsettings.json
 
@@ -92,10 +96,67 @@ ENV CHROME_PATH=/usr/bin/google-chrome
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 ENV DISPLAY=:99
 
-# Create reports directory
-RUN mkdir -p /app/TestResults
+# Create reports directory and HTML subdirectory
+RUN mkdir -p /app/TestResults/html
+
+# Create wrapper script to run tests and generate HTML report
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Ensure we are in the correct directory\n\
+cd /app\n\
+\n\
+# Run tests with TRX report generation\n\
+echo "========================================="\n\
+echo "  Running tests..."\n\
+echo "========================================="\n\
+dotnet test -c Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory /app/TestResults "$@"\n\
+\n\
+# Generate HTML report from TRX file\n\
+echo ""\n\
+echo "========================================="\n\
+echo "  Generating HTML report..."\n\
+echo "========================================="\n\
+if [ -f "/app/TestResults/TestResults.trx" ]; then\n\
+    cd /app\n\
+    python3 generate-html-report.py\n\
+    if [ -f "/app/TestResults/html/TestReport.html" ]; then\n\
+        echo ""\n\
+        echo "✓ HTML report generated successfully!"\n\
+        echo "  Location: /app/TestResults/html/TestReport.html"\n\
+        echo ""\n\
+        echo "========================================="\n\
+        echo "  Test Run Complete!"\n\
+        echo "========================================="\n\
+        echo ""\n\
+        # Create a script in TestResults that host can execute to open the report\n\
+        echo "#!/bin/bash\n\
+# Auto-generated script to open test report\n\
+if [[ \"$OSTYPE\" == \"linux-gnu\"* ]]; then\n\
+    xdg-open \"$(dirname \"$0\")/html/TestReport.html\" 2>/dev/null\n\
+elif [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n\
+    open \"$(dirname \"$0\")/html/TestReport.html\"\n\
+elif [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" ]]; then\n\
+    start \"$(dirname \"$0\")/html/TestReport.html\"\n\
+else\n\
+    echo \"Please open the report manually: $(dirname \"$0\")/html/TestReport.html\"\n\
+fi\n\
+" > /app/TestResults/open-report.sh\n\
+        chmod +x /app/TestResults/open-report.sh\n\
+        echo "To open the report, run from host:"\n\
+        echo "  ./TestResults/open-report.sh"\n\
+        echo "  (or macOS: open TestResults/html/TestReport.html)"\n\
+        echo "  (or Linux: xdg-open TestResults/html/TestReport.html)"\n\
+        echo ""\n\
+    else\n\
+        echo "Warning: HTML report file not found after generation"\n\
+    fi\n\
+else\n\
+    echo "Warning: TestResults.trx not found, skipping HTML report generation"\n\
+fi\n\
+' > /app/run-tests-and-report.sh && chmod +x /app/run-tests-and-report.sh
 
 # Selenium 4.x will automatically use selenium-manager to download the correct ChromeDriver
-# Set entrypoint and default command for running tests with report generation
-ENTRYPOINT ["dotnet", "test", "-c", "Release", "--verbosity", "normal", "--logger", "trx;LogFileName=TestResults.trx", "--results-directory", "/app/TestResults"]
+# Set entrypoint to run tests and generate HTML report
+ENTRYPOINT ["/app/run-tests-and-report.sh"]
 CMD ["--filter", "FullyQualifiedName~GoogleSearchTest"]

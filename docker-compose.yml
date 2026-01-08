@@ -8,9 +8,10 @@ services:
     image: vaxcare-tests:latest
     container_name: vaxcare-test-runner
     volumes:
-      # Mount TestResults directory to host for report access
+      # Mount TestResults directory to host for report access (includes HTML reports)
       - ./TestResults:/app/TestResults
-    # Run tests and exit
-    command: dotnet test --no-build -c Release --verbosity normal --filter "FullyQualifiedName~GoogleSearchTest" --logger "trx;LogFileName=TestResults.trx" --results-directory /app/TestResults
+    # Run tests with HTML report generation (filter can be overridden)
+    # Default filter from Dockerfile CMD will be used if not specified
+    # To run different tests: docker-compose run tests --filter "FullyQualifiedName~YourTest"
 
 
