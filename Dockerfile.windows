@@ -26,25 +26,28 @@ WORKDIR C:\app
 COPY *.sln ./
 
 # Copy project files (for better layer caching)
-COPY VaxCare.ApiClient\*.csproj .\VaxCare.ApiClient\
-COPY VaxCare.Core\*.csproj .\VaxCare.Core\
-COPY VaxCare.Data\*.csproj .\VaxCare.Data\
-COPY VaxCare.Pages\*.csproj .\VaxCare.Pages\
-COPY VaxCare.Tests\*.csproj .\VaxCare.Tests\
-COPY VaxCare.Tests\appsettings.json .\VaxCare.Tests\
-COPY VaxCare.UnitTests\*.csproj .\VaxCare.UnitTests\
+# Use forward slashes in Windows containers (Docker accepts them)
+COPY VaxCare.ApiClient/*.csproj ./VaxCare.ApiClient/
+COPY VaxCare.Core/*.csproj ./VaxCare.Core/
+COPY VaxCare.Data/*.csproj ./VaxCare.Data/
+COPY VaxCare.Pages/*.csproj ./VaxCare.Pages/
+COPY VaxCare.Tests/*.csproj ./VaxCare.Tests/
+COPY VaxCare.Tests/appsettings.json ./VaxCare.Tests/
+COPY VaxCare.UnitTests/*.csproj ./VaxCare.UnitTests/
 
 # Copy all source files
-COPY VaxCare.ApiClient\ .\VaxCare.ApiClient\
-COPY VaxCare.Core\ .\VaxCare.Core\
-COPY VaxCare.Data\ .\VaxCare.Data\
-COPY VaxCare.Pages\ .\VaxCare.Pages\
-COPY VaxCare.Tests\ .\VaxCare.Tests\
-COPY VaxCare.UnitTests\ .\VaxCare.UnitTests\
+COPY VaxCare.ApiClient/ ./VaxCare.ApiClient/
+COPY VaxCare.Core/ ./VaxCare.Core/
+COPY VaxCare.Data/ ./VaxCare.Data/
+COPY VaxCare.Pages/ ./VaxCare.Pages/
+COPY VaxCare.Tests/ ./VaxCare.Tests/
+COPY VaxCare.UnitTests/ ./VaxCare.UnitTests/
+
+# Copy PowerShell script to update appsettings.json
+COPY update-headless.ps1 ./
 
 # Update appsettings.json to enable headless mode for Docker
-# Escape $ as $$ in Dockerfile to prevent variable substitution
-RUN powershell -Command "$$json = Get-Content .\VaxCare.Tests\appsettings.json | ConvertFrom-Json; $$json.WebDriverSettings.Headless = $$true; $$json | ConvertTo-Json -Depth 10 | Set-Content .\VaxCare.Tests\appsettings.json"
+RUN powershell -ExecutionPolicy Bypass -File ./update-headless.ps1
 
 # Restore and build the solution
 RUN dotnet restore && dotnet build -c Release
