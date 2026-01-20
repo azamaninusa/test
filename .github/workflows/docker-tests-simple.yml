@@ -270,10 +270,12 @@ jobs:
                   fi
 
                   # Extract error message using Python to properly parse XML with namespaces
-                  # Create a temporary Python script to extract error messages
-                  cat > /tmp/extract_error.py << 'PYEOF'
+                  RAW_ERROR=$(python3 -c "
 import sys
-import xml.etree.ElementTree as ET
+try:
+    from xml.etree import ElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 import html
 
 trx_file = 'TestResults/TestResults.trx'
@@ -322,10 +324,9 @@ try:
                         print(line[:200])
                         sys.exit(0)
             break
-except:
+except Exception:
     pass
-PYEOF
-                  RAW_ERROR=$(python3 /tmp/extract_error.py "$test" 2>/dev/null || echo "")
+" "$test" 2>/dev/null || echo "")
                   
                   if [ -n "$RAW_ERROR" ]; then
                     # Clean up and format the error message
