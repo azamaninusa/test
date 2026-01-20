@@ -1,0 +1,257 @@
+using OpenQA.Selenium;
+using Serilog;
+using VaxCare.Core;
+using VaxCare.Core.Extensions;
+using VaxCare.Core.Logger;
+using VaxCare.Core.WebDriver;
+
+namespace VaxCare.Pages.CommunityEvents
+{
+    /// <summary>
+    /// Community Events Registration Page - Handles patient registration for community events
+    /// </summary>
+    public class CommunityEventsRegistrationPage(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    {
+        // Selectors
+        private const string EnrollmentCodeInput = "PartnerCode";
+        private const string BeginRegistrationButton = "//input[@class='enrollment-login-button' and @value='Begin Registration']";
+        private const string ContinueButton = "//input[@class='enrollment-login-button' and @value='Continue']";
+        private const string ClinicDropdown = "SelectedClinicId";
+        private const string FirstNameInput = "firstName";
+        private const string LastNameInput = "lastName";
+        private const string DobInput = "dob";
+        private const string GenderDropdown = "gender";
+        private const string EthnicityDropdown = "ethnicity";
+        private const string RaceDropdown = "race";
+        private const string Address1Input = "ContactInformation_Address1";
+        private const string CityInput = "ContactInformation_City";
+        private const string StateDropdown = "ContactInformation_State";
+        private const string ZipCodeInput = "ContactInformation_ZipCode";
+        private const string PhoneInput = "ContactInformation_Phone";
+        private const string UninsuredCheckbox = "//input[@id='uninsured']";
+        private const string PrimaryInsuranceInput = "Insurance.PrimaryInsuranceId_input";
+        private const string MemberIdInput = "Insurance_MemberId";
+        private const string RelationshipToInsuredDropdown = "relationshipToInsured";
+        private const string FormSubmitButton = "//input[@id='form-submit' and @value='Submit Registration']";
+        private const string AuthorizationSignatureInput = "Authorization_Signature";
+        private const string AuthorizationConsentCheckbox = "Authorization_Consent";
+
+        // Validation selectors
+        private const string InvalidCodeWarning = "//div[@class='validation-warning enrollment' and contains(@style,'display')]/span[text()='Invalid code.  Please try again or contact the event organizer.']";
+        private const string NoClinicWarning = "//span[@id='SelectedClinicId-error' and text()='Please select an event location']";
+        private const string IncompleteFieldWarning = "//div[@class='validation-warning' and @style='display: block;']/span[text()='This form must be completed in order to receive vaccinations.']";
+        private const string SuccessModalTitle = "//div[@class='modal-title' and text()='Success!']";
+        private const string SuccessModalExitButton = "//button[text()='Exit']";
+        private const string SuccessModalSavePrintButton = "//button[@id='print-page' and text()='Save / Print']";
+
+        // UI Elements
+        private const string VaxCareLogo = "//img[contains(@src,'images/VaxCareCrossIcon.svg')]";
+        private const string EventRegistrationTitle = "//div[text()='Event Registration']/following-sibling::div[text()='School & Community Outreach']";
+        private const string GetStartedHeader = "//div[@class='enrollment-login-header']/span[contains(text(),'Get Started')]";
+        private const string EnrollmentCodeLabel = "//label[@for='PartnerCode' and text()='Enrollment Code']";
+
+        public async Task<CommunityEventsRegistrationPage> VerifyEventRegistrationHomePageUIAsync()
+        {
+            Log.Step("Verify Event Registration Home Page UI elements");
+            
+            await Driver.WaitUntilElementLoadsAsync(VaxCareLogo.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(EventRegistrationTitle.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(GetStartedHeader.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(EnrollmentCodeLabel.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync($"{EnrollmentCodeInput}".Id(), Log);
+            
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> EnterEnrollmentCodeAsync(string enrollmentCode)
+        {
+            Log.Step($"Enter enrollment code: {enrollmentCode}");
+            await Driver.SendKeysAsync(EnrollmentCodeInput.Id(), enrollmentCode, Log);
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> ClickBeginRegistrationButtonAsync()
+        {
+            Log.Step("Click Begin Registration button");
+            await Driver.ClickAsync(BeginRegistrationButton.XPath(), Log);
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> EnterEnrollmentCodeAndClickBeginRegistrationAsync(string enrollmentCode)
+        {
+            Log.Step($"Enter enrollment code and click Begin Registration: {enrollmentCode}");
+            await EnterEnrollmentCodeAsync(enrollmentCode);
+            await ClickBeginRegistrationButtonAsync();
+            
+            // Verify location dropdown appears
+            await Driver.WaitUntilElementLoadsAsync("//label[text()='Location']/following-sibling::select[not(@aria-describedby)]/option[text()='   -- Select --   ']".XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(ContinueButton.XPath(), Log);
+            
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> SelectClinicAsync(string clinicLocation)
+        {
+            Log.Step($"Select clinic location: {clinicLocation}");
+            await Driver.SelectDropDownOptionByTextAsync(ClinicDropdown.Id(), clinicLocation, Log);
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> ClickContinueButtonAsync()
+        {
+            Log.Step("Click Continue button");
+            await Driver.ClickAsync(ContinueButton.XPath(), Log);
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> SelectClinicAndClickContinueAsync(string clinicLocation)
+        {
+            Log.Step($"Select clinic and click Continue: {clinicLocation}");
+            await SelectClinicAsync(clinicLocation);
+            await ClickContinueButtonAsync();
+            
+            // Wait for registration page to load
+            await Driver.WaitUntilElementLoadsAsync("//div[@class='enrollment-header' and text()='Event Registration']".XPath(), Log);
+            
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> EnterEnrollmentCodeAndClinicLocationAsync(string enrollmentCode, string clinicLocation)
+        {
+            Log.Step($"Enter enrollment code and select clinic: {enrollmentCode}, {clinicLocation}");
+            await EnterEnrollmentCodeAndClickBeginRegistrationAsync(enrollmentCode);
+            await SelectClinicAndClickContinueAsync(clinicLocation);
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> EnterRegistrationInfoAsync(string firstName, string lastName, string insurance)
+        {
+            Log.Step($"Enter patient registration information: {firstName} {lastName}, Insurance: {(string.IsNullOrEmpty(insurance) ? "None" : insurance)}");
+            
+            // Basic Information
+            await Driver.SendKeysAsync(FirstNameInput.Id(), firstName, Log);
+            await Driver.SendKeysAsync(LastNameInput.Id(), lastName, Log);
+            await Driver.SendKeysAsync(DobInput.Id(), "09/28/2018", Log);
+            await Driver.SelectDropDownOptionByTextAsync(GenderDropdown.Id(), "Female", Log);
+            await Driver.SelectDropDownOptionByTextAsync(EthnicityDropdown.Id(), "Unspecified", Log);
+            await Driver.SelectDropDownOptionByTextAsync(RaceDropdown.Id(), "Unspecified", Log);
+            
+            // Contact Information
+            await Driver.SendKeysAsync(Address1Input.Id(), "5 MY STREET", Log);
+            await Driver.SendKeysAsync(CityInput.Id(), "ORLANDO", Log);
+            await Driver.SelectDropDownOptionByTextAsync(StateDropdown.Id(), "Florida", Log);
+            await Driver.SendKeysAsync(ZipCodeInput.Id(), "32806", Log);
+            await Driver.SendKeysAsync(PhoneInput.Id(), "382-103-9728", Log);
+            
+            // Insurance Information
+            if (string.IsNullOrEmpty(insurance))
+            {
+                Log.Step("Patient has no insurance - selecting uninsured option");
+                // Verify insurance fields are initially visible
+                var hiddenInsuranceContainer = "//div[@class='insured-container' and @style='display: none;']";
+                var hiddenPrimaryInsuranceInput = "//input[@name='Insurance.PrimaryInsuranceId_input' and @disabled]";
+                
+                // Click uninsured checkbox
+                await Driver.ClickAsync(UninsuredCheckbox.XPath(), Log);
+                await Task.Delay(2000); // Wait for UI to update
+                
+                // Verify insurance fields are now hidden
+                await Driver.WaitUntilElementLoadsAsync(hiddenInsuranceContainer.XPath(), Log);
+                await Driver.WaitUntilElementLoadsAsync(hiddenPrimaryInsuranceInput.XPath(), Log);
+            }
+            else
+            {
+                Log.Step($"Enter insurance information: {insurance}");
+                await Driver.SendKeysAsync(PrimaryInsuranceInput.Name(), insurance, Log);
+                await Driver.SendKeysAsync(MemberIdInput.Id(), "10742845GBHZ", Log);
+                await Driver.SelectDropDownOptionByTextAsync(RelationshipToInsuredDropdown.Id(), "Self", Log);
+            }
+            
+            // Authorization and Consent
+            Log.Step("Fill out authorization and consent questions");
+            await Driver.ClickAsync("//label[@for='Authorization_PatientIsSick_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HasAllergy_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HadVaccineReaction_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HasHealthProblems_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_Immunocompromised_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HadCancerTreatments_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HasHadNeurologicalDisease_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_DoesSmoke_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HasHadBloodTreatment_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_IsPregnant_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HadRecentVaccinations_N']".XPath(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_HadInfluenzaVaccination_N']".XPath(), Log);
+            await Driver.ClickAsync(AuthorizationConsentCheckbox.Id(), Log);
+            
+            // Signature
+            await Driver.SendKeysAsync(AuthorizationSignatureInput.Id(), "Test Patient", Log);
+            
+            // Submit Registration
+            Log.Step("Submit registration form");
+            await Driver.ClickAsync(FormSubmitButton.XPath(), Log);
+            
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> VerifyIncompleteFieldWarningAsync()
+        {
+            Log.Step("Verify incomplete field warning is displayed");
+            
+            // Verify warning message
+            await Driver.WaitUntilElementLoadsAsync(IncompleteFieldWarning.XPath(), Log);
+            
+            // Verify first name field has validation error
+            await Driver.WaitUntilElementLoadsAsync("//input[@id='firstName']/parent::div[contains(@class,'input-validation-error')]".XPath(), Log);
+            
+            return this;
+        }
+
+        public async Task<CommunityEventsRegistrationPage> ClickSuccessDialogButtonAsync(string buttonText)
+        {
+            Log.Step($"Click {buttonText} button on success dialog");
+            
+            // Wait for success modal
+            await Driver.WaitUntilElementLoadsAsync(SuccessModalTitle.XPath(), Log);
+            
+            // Verify modal elements
+            await Driver.WaitUntilElementLoadsAsync("//div[@class='modal-body']/div[text()='Save or print a copy of this form for your records.']".XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(SuccessModalSavePrintButton.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(SuccessModalExitButton.XPath(), Log);
+            
+            // Click the specified button
+            var buttonSelector = $"//button[text()='{buttonText}']";
+            await Driver.ClickAsync(buttonSelector.XPath(), Log);
+            
+            return this;
+        }
+
+        public async Task<bool> VerifyInvalidCodeWarningAsync()
+        {
+            Log.Step("Verify invalid code warning is displayed");
+            return await Driver.IsElementPresentAsync(InvalidCodeWarning.XPath(), Log);
+        }
+
+        public async Task<bool> VerifyNoClinicWarningAsync()
+        {
+            Log.Step("Verify no clinic selected warning is displayed");
+            return await Driver.IsElementPresentAsync(NoClinicWarning.XPath(), Log);
+        }
+
+        public string DetermineCorrectEnvironmentPortalUrl()
+        {
+            // This would need to be configured based on environment
+            // For now, defaulting to staging
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Staging";
+            
+            return environment.ToLower() switch
+            {
+                "development" => "https://identitydev.vaxcare.com/",
+                "qa" => "https://identityqa.vaxcare.com/",
+                "staging" => "https://identitystg.vaxcare.com/",
+                "production" => "https://identity.vaxcare.com/",
+                _ => "https://identitystg.vaxcare.com/"
+            };
+        }
+    }
+}
+
