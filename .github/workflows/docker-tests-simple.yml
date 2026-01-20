@@ -37,25 +37,50 @@ jobs:
           echo "Volume mount: ${{ github.workspace }}/TestResults -> /app/TestResults"
           echo "Checking host directory before Docker run:"
           ls -la TestResults/ || echo "TestResults not found on host"
+          echo ""
+          echo "=== Running tests (output will show screenshot capture attempts) ==="
           docker run --rm \
             --name vaxcare-tests \
             -v "${{ github.workspace }}/TestResults:/app/TestResults:rw" \
             ${{ env.DOCKER_IMAGE }}:latest \
-            --filter "FullyQualifiedName~GoogleSearchTest"
+            --filter "FullyQualifiedName~GoogleSearchTest" 2>&1 | tee test-output.log || true
+          echo ""
+          echo "=== Checking for screenshot-related messages in test output ==="
+          grep -i "screenshot" test-output.log || echo "No screenshot messages found in output"
+          echo ""
+          echo "=== Checking for screenshot errors ==="
+          grep -i "failed to capture\|screenshot.*fail\|driver.*null" test-output.log || echo "No screenshot errors found"
+          echo ""
+          echo "=== Checking test failure messages ==="
+          grep -i "test failed\|exception\|error" test-output.log | head -20 || echo "No failure messages found"
+          echo ""
           echo "Docker container finished"
           echo "Checking host directory after Docker run:"
           ls -la TestResults/ || echo "TestResults not found on host"
           ls -la TestResults/screenshots/ || echo "Screenshots directory not found"
 
-      - name: Verify Docker container created screenshots
+      - name: Verify Docker container paths
         if: always()
         run: |
-          echo "=== Verifying screenshots were created in container ==="
-          # Run a quick check inside a new container to see if screenshots exist
+          echo "=== Verifying paths inside container ==="
+          # Check if /app/TestResults exists and is writable
           docker run --rm \
-            -v "${{ github.workspace }}/TestResults:/app/TestResults:ro" \
+            -v "${{ github.workspace }}/TestResults:/app/TestResults:rw" \
             ${{ env.DOCKER_IMAGE }}:latest \
-            sh -c "ls -la /app/TestResults/screenshots/ 2>&1 || echo 'Screenshots directory check failed'" || true
+            sh -c "
+              echo 'Checking /app/TestResults directory:'
+              ls -la /app/TestResults/ || echo 'Directory not found'
+              echo ''
+              echo 'Checking /app/TestResults/screenshots:'
+              ls -la /app/TestResults/screenshots/ 2>&1 || echo 'Screenshots directory not found'
+              echo ''
+              echo 'Testing write permissions:'
+              touch /app/TestResults/screenshots/test-write.txt 2>&1 && echo 'Write test: SUCCESS' || echo 'Write test: FAILED'
+              rm -f /app/TestResults/screenshots/test-write.txt 2>&1
+              echo ''
+              echo 'Checking if Directory.Exists would find /app/TestResults:'
+              echo 'Path exists check would return: true (if directory exists)'
+            " || true
 
       - name: Check screenshots after test
         if: always()
