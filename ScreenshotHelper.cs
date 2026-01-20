@@ -92,8 +92,37 @@ namespace VaxCare.Core.Helpers
                     throw;
                 }
                 
-                // Sanitize test name for filename (remove invalid characters)
-                var sanitizedTestName = string.Join("_", testName.Split(Path.GetInvalidFileNameChars()));
+                // Sanitize test name for filename (remove invalid characters and spaces)
+                // Replace spaces and special characters with underscores for web-friendly filenames
+                var sanitizedTestName = testName
+                    .Replace(" ", "_")  // Replace spaces with underscores
+                    .Replace("'", "")   // Remove apostrophes
+                    .Replace("\"", "")  // Remove quotes
+                    .Replace(":", "_")  // Replace colons
+                    .Replace("/", "_")  // Replace slashes
+                    .Replace("\\", "_") // Replace backslashes
+                    .Replace("?", "")   // Remove question marks
+                    .Replace("*", "")   // Remove asterisks
+                    .Replace("<", "")   // Remove less than
+                    .Replace(">", "")   // Remove greater than
+                    .Replace("|", "_"); // Replace pipe with underscore
+                
+                // Also remove any remaining invalid filename characters
+                var invalidChars = Path.GetInvalidFileNameChars();
+                foreach (var c in invalidChars)
+                {
+                    sanitizedTestName = sanitizedTestName.Replace(c, '_');
+                }
+                
+                // Remove multiple consecutive underscores
+                while (sanitizedTestName.Contains("__"))
+                {
+                    sanitizedTestName = sanitizedTestName.Replace("__", "_");
+                }
+                
+                // Trim underscores from start and end
+                sanitizedTestName = sanitizedTestName.Trim('_');
+                
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var filename = $"{sanitizedTestName}_{timestamp}.png";
                 

@@ -11,6 +11,7 @@ import os
 import glob
 import shutil
 import re
+import urllib.parse
 
 # Paths
 trx_file = 'TestResults/TestResults.trx'
@@ -227,15 +228,25 @@ for result in results:
             screenshots_html = '<div class="screenshots"><div class="screenshot-title">Screenshots:</div>'
             for screenshot_rel_path in screenshots:
                 screenshot_name = os.path.basename(screenshot_rel_path)
-                # Don't escape the path - it's a safe relative path, just escape the display name
-                # Use URL encoding for the path if needed, but forward slashes are fine in URLs
-                safe_path = screenshot_rel_path.replace('\\', '/')  # Ensure forward slashes
+                # Ensure forward slashes and URL-encode the path properly
+                safe_path = screenshot_rel_path.replace('\\', '/')
+                # URL encode the path to handle any special characters
+                url_encoded_path = urllib.parse.quote(safe_path, safe='/')
                 escaped_name = html.escape(screenshot_name)
+                
+                # Use absolute path from HTML file location
+                # The HTML file is in TestResults/html/, screenshots are in TestResults/html/screenshots/
+                # So relative path should be "screenshots/filename.png"
+                if not safe_path.startswith('screenshots/'):
+                    # Extract just the filename if full path is provided
+                    safe_path = os.path.join('screenshots', screenshot_name)
+                    url_encoded_path = urllib.parse.quote(safe_path, safe='/')
+                
                 screenshots_html += f'''<div class="screenshot-container">
-                        <a href="{safe_path}" target="_blank" class="screenshot-link">
-                            <img src="{safe_path}" alt="Screenshot: {escaped_name}" class="screenshot-img" style="max-width: 800px; display: block;" />
+                        <div class="screenshot-title">Screenshot: {escaped_name}</div>
+                        <a href="{url_encoded_path}" target="_blank" class="screenshot-link">
+                            <img src="{url_encoded_path}" alt="Screenshot: {escaped_name}" class="screenshot-img" style="max-width: 800px; display: block; margin-top: 10px;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'color: red;\\'>Failed to load image: {escaped_name}</div>';" />
                         </a>
-                        <div style="font-size: 11px; color: #666; margin-top: 5px;">{escaped_name}</div>
                     </div>'''
             screenshots_html += '</div>'
         else:
