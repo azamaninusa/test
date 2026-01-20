@@ -31,7 +31,6 @@ jobs:
 
       - name: Run tests
         id: run_tests
-        continue-on-error: true
         run: |
           echo "Running tests in Docker..."
           echo "Volume mount: ${{ github.workspace }}/TestResults -> /app/TestResults"
@@ -39,11 +38,18 @@ jobs:
           ls -la TestResults/ || echo "TestResults not found on host"
           echo ""
           echo "=== Running tests (output will show screenshot capture attempts) ==="
+          # Run tests and capture exit code
+          set +e  # Don't exit on error immediately
           docker run --rm \
             --name vaxcare-tests \
             -v "${{ github.workspace }}/TestResults:/app/TestResults:rw" \
             ${{ env.DOCKER_IMAGE }}:latest \
-            --filter "FullyQualifiedName~GoogleSearchTest" 2>&1 | tee test-output.log || true
+            --filter "FullyQualifiedName~GoogleSearchTest" 2>&1 | tee test-output.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}  # Get exit code from docker run (not tee)
+          set -e  # Re-enable exit on error
+          
+          echo "Docker run exit code: $TEST_EXIT_CODE"
+          echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
           echo ""
           echo "=== Checking for screenshot-related messages in test output ==="
           grep -i "screenshot" test-output.log || echo "No screenshot messages found in output"
@@ -151,9 +157,41 @@ jobs:
           if-no-files-found: warn
           compression-level: 6
 
-      - name: Fail if tests failed
-        if: steps.run_tests.outcome == 'failure'
+      - name: Check test results
+        if: always()
+        id: check_test_results
         run: |
-          echo "Tests failed"
+          TEST_EXIT_CODE="${{ steps.run_tests.outputs.TEST_EXIT_CODE }}"
+          echo "Test exit code: $TEST_EXIT_CODE"
+          
+          # Check if TRX file exists and parse it for failures
+          if [ -f "TestResults/TestResults.trx" ]; then
+            echo "TRX file found, checking for test failures..."
+            # Count failed tests in TRX file
+            FAILED_COUNT=$(grep -o 'outcome="Failed"' TestResults/TestResults.trx | wc -l || echo "0")
+            echo "Failed test count from TRX: $FAILED_COUNT"
+            
+            if [ "$FAILED_COUNT" -gt 0 ]; then
+              echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+              echo "❌ Tests failed: $FAILED_COUNT test(s) failed"
+            else
+              echo "TESTS_FAILED=false" >> $GITHUB_OUTPUT
+              echo "✅ All tests passed"
+            fi
+          else
+            echo "TRX file not found"
+            # If docker run failed and no TRX file, tests definitely failed
+            if [ "$TEST_EXIT_CODE" != "0" ]; then
+              echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+              echo "❌ Tests failed: Docker run exited with code $TEST_EXIT_CODE"
+            else
+              echo "TESTS_FAILED=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Fail workflow if tests failed
+        if: steps.check_test_results.outputs.TESTS_FAILED == 'true'
+        run: |
+          echo "❌ Test failures detected. Failing workflow."
           exit 1
 
