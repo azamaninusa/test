@@ -270,7 +270,8 @@ jobs:
                   fi
 
                   # Extract error message using Python to properly parse XML with namespaces
-                  RAW_ERROR=$(python3 << 'PYTHON_SCRIPT'
+                  # Create a temporary Python script to extract error messages
+                  cat > /tmp/extract_error.py << 'PYEOF'
 import sys
 import xml.etree.ElementTree as ET
 import html
@@ -281,68 +282,50 @@ test_name = sys.argv[1]
 try:
     tree = ET.parse(trx_file)
     root = tree.getroot()
-    
-    # Define namespace
     ns = {'ns': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
-    
-    # Find the failed test result
     for result in root.findall('.//ns:UnitTestResult', ns):
         if result.get('testName') == test_name and result.get('outcome') == 'Failed':
-            # Try to find error message in Output/ErrorInfo/Message
             output_elem = result.find('.//ns:Output', ns)
             if output_elem is not None:
                 error_info = output_elem.find('.//ns:ErrorInfo', ns)
                 if error_info is not None:
                     message_elem = error_info.find('.//ns:Message', ns)
                     if message_elem is not None and message_elem.text:
-                        error_text = message_elem.text
-                        # Decode HTML entities
-                        error_text = html.unescape(error_text)
-                        # Get first meaningful line (skip empty lines and common prefixes)
-                        lines = error_text.split('\n')
-                        for line in lines:
+                        error_text = html.unescape(message_elem.text)
+                        for line in error_text.split('\n'):
                             line = line.strip()
                             if line and not line.startswith('Test:') and not line.startswith('Description:'):
-                                print(line[:200])  # Limit to 200 chars
+                                print(line[:200])
                                 sys.exit(0)
-                    # If no Message, try StackTrace
                     stack_trace = error_info.find('.//ns:StackTrace', ns)
                     if stack_trace is not None and stack_trace.text:
-                        error_text = stack_trace.text
-                        error_text = html.unescape(error_text)
-                        lines = error_text.split('\n')
-                        for line in lines:
+                        error_text = html.unescape(stack_trace.text)
+                        for line in error_text.split('\n'):
                             line = line.strip()
                             if line:
                                 print(line[:200])
                                 sys.exit(0)
-            
-            # Fallback: look for any Message tag in the result
             message_elem = result.find('.//ns:Message', ns)
             if message_elem is not None and message_elem.text:
                 error_text = html.unescape(message_elem.text)
-                lines = error_text.split('\n')
-                for line in lines:
+                for line in error_text.split('\n'):
                     line = line.strip()
                     if line:
                         print(line[:200])
                         sys.exit(0)
-            
-            # Last resort: look for any text in Output
             output_elem = result.find('.//ns:Output', ns)
             if output_elem is not None and output_elem.text:
                 error_text = html.unescape(output_elem.text)
-                lines = error_text.split('\n')
-                for line in lines:
+                for line in error_text.split('\n'):
                     line = line.strip()
                     if line and not line.startswith('Test:') and not line.startswith('Description:'):
                         print(line[:200])
                         sys.exit(0)
             break
-except Exception as e:
-    pass  # Return empty on any error
-PYTHON_SCRIPT
-"$test" 2>/dev/null || echo "")
+except:
+    pass
+PYEOF
+                  RAW_ERROR=$(python3 /tmp/extract_error.py "$test" 2>/dev/null || echo "")
                   
                   if [ -n "$RAW_ERROR" ]; then
                     # Clean up and format the error message
