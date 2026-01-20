@@ -269,10 +269,83 @@ jobs:
                     fi
                   fi
 
-                  # Try to extract error message for this test (look for Message tag near the test)
-                  RAW_ERROR=$(grep -A 30 "testName=\"$test\"" TestResults/TestResults.trx | grep -oE '<Message[^>]*>[^<]*</Message>' | head -1 | sed 's/<Message[^>]*>//;s/<\/Message>//' || echo "")
+                  # Extract error message using Python to properly parse XML with namespaces
+                  RAW_ERROR=$(python3 << 'PYTHON_SCRIPT'
+import sys
+import xml.etree.ElementTree as ET
+import html
+
+trx_file = 'TestResults/TestResults.trx'
+test_name = sys.argv[1]
+
+try:
+    tree = ET.parse(trx_file)
+    root = tree.getroot()
+    
+    # Define namespace
+    ns = {'ns': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+    
+    # Find the failed test result
+    for result in root.findall('.//ns:UnitTestResult', ns):
+        if result.get('testName') == test_name and result.get('outcome') == 'Failed':
+            # Try to find error message in Output/ErrorInfo/Message
+            output_elem = result.find('.//ns:Output', ns)
+            if output_elem is not None:
+                error_info = output_elem.find('.//ns:ErrorInfo', ns)
+                if error_info is not None:
+                    message_elem = error_info.find('.//ns:Message', ns)
+                    if message_elem is not None and message_elem.text:
+                        error_text = message_elem.text
+                        # Decode HTML entities
+                        error_text = html.unescape(error_text)
+                        # Get first meaningful line (skip empty lines and common prefixes)
+                        lines = error_text.split('\n')
+                        for line in lines:
+                            line = line.strip()
+                            if line and not line.startswith('Test:') and not line.startswith('Description:'):
+                                print(line[:200])  # Limit to 200 chars
+                                sys.exit(0)
+                    # If no Message, try StackTrace
+                    stack_trace = error_info.find('.//ns:StackTrace', ns)
+                    if stack_trace is not None and stack_trace.text:
+                        error_text = stack_trace.text
+                        error_text = html.unescape(error_text)
+                        lines = error_text.split('\n')
+                        for line in lines:
+                            line = line.strip()
+                            if line:
+                                print(line[:200])
+                                sys.exit(0)
+            
+            # Fallback: look for any Message tag in the result
+            message_elem = result.find('.//ns:Message', ns)
+            if message_elem is not None and message_elem.text:
+                error_text = html.unescape(message_elem.text)
+                lines = error_text.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line:
+                        print(line[:200])
+                        sys.exit(0)
+            
+            # Last resort: look for any text in Output
+            output_elem = result.find('.//ns:Output', ns)
+            if output_elem is not None and output_elem.text:
+                error_text = html.unescape(output_elem.text)
+                lines = error_text.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line and not line.startswith('Test:') and not line.startswith('Description:'):
+                        print(line[:200])
+                        sys.exit(0)
+            break
+except Exception as e:
+    pass  # Return empty on any error
+PYTHON_SCRIPT
+"$test" 2>/dev/null || echo "")
+                  
                   if [ -n "$RAW_ERROR" ]; then
-                    # Single-line, trimmed snippet for summary
+                    # Clean up and format the error message
                     ERROR_SNIPPET=$(echo "$RAW_ERROR" | tr '\n' ' ' | sed 's/  */ /g' | head -c 200)
                     echo "- \`$DISPLAY_NAME\` - $ERROR_SNIPPET" >> $GITHUB_STEP_SUMMARY
                   else
