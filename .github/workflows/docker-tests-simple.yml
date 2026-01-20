@@ -25,33 +25,85 @@ jobs:
       - name: Create test results directory
         run: |
           mkdir -p TestResults/screenshots TestResults/html
+          chmod -R 777 TestResults || true
+          echo "Created TestResults directory structure"
+          ls -la TestResults/ || true
 
       - name: Run tests
         id: run_tests
         continue-on-error: true
         run: |
+          echo "Running tests in Docker..."
+          echo "Volume mount: ${{ github.workspace }}/TestResults -> /app/TestResults"
+          echo "Checking host directory before Docker run:"
+          ls -la TestResults/ || echo "TestResults not found on host"
           docker run --rm \
             --name vaxcare-tests \
-            -v "${{ github.workspace }}/TestResults:/app/TestResults" \
+            -v "${{ github.workspace }}/TestResults:/app/TestResults:rw" \
             ${{ env.DOCKER_IMAGE }}:latest \
             --filter "FullyQualifiedName~GoogleSearchTest"
+          echo "Docker container finished"
+          echo "Checking host directory after Docker run:"
+          ls -la TestResults/ || echo "TestResults not found on host"
+          ls -la TestResults/screenshots/ || echo "Screenshots directory not found"
+
+      - name: Verify Docker container created screenshots
+        if: always()
+        run: |
+          echo "=== Verifying screenshots were created in container ==="
+          # Run a quick check inside a new container to see if screenshots exist
+          docker run --rm \
+            -v "${{ github.workspace }}/TestResults:/app/TestResults:ro" \
+            ${{ env.DOCKER_IMAGE }}:latest \
+            sh -c "ls -la /app/TestResults/screenshots/ 2>&1 || echo 'Screenshots directory check failed'" || true
+
+      - name: Check screenshots after test
+        if: always()
+        run: |
+          echo "=== Checking TestResults directory on host ==="
+          ls -la TestResults/ || echo "TestResults directory not found"
+          echo ""
+          echo "=== Checking screenshots directory ==="
+          if [ -d "TestResults/screenshots" ]; then
+            echo "Screenshots directory exists"
+            echo "Directory permissions:"
+            ls -ld TestResults/screenshots/
+            echo "Directory contents:"
+            ls -la TestResults/screenshots/ || echo "Cannot list screenshots directory"
+            echo ""
+            echo "=== Searching for PNG files ==="
+            find TestResults/screenshots -type f -name "*.png" 2>/dev/null || echo "No PNG files found"
+            SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
+            echo "Screenshot count: $SCREENSHOT_COUNT"
+            if [ "$SCREENSHOT_COUNT" -eq 0 ]; then
+              echo "WARNING: No screenshots found!"
+              echo "This could mean:"
+              echo "1. Test passed (screenshots only captured on failure)"
+              echo "2. Screenshot capture failed silently"
+              echo "3. Volume mount issue"
+            fi
+          else
+            echo "Screenshots directory does not exist"
+            echo "Creating it now..."
+            mkdir -p TestResults/screenshots
+            ls -la TestResults/ || true
+          fi
 
       - name: Check screenshots
         if: always()
         id: check_screenshots
         run: |
           mkdir -p TestResults/screenshots
-          if [ -d "TestResults/screenshots" ]; then
-            SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
-            echo "Found $SCREENSHOT_COUNT screenshot(s)"
-            if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
-              echo "has_screenshots=true" >> $GITHUB_OUTPUT
-              find TestResults/screenshots -type f -name "*.png" | head -10
-            else
-              echo "has_screenshots=false" >> $GITHUB_OUTPUT
-            fi
+          SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
+          echo "Found $SCREENSHOT_COUNT screenshot(s)"
+          if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
+            echo "has_screenshots=true" >> $GITHUB_OUTPUT
+            echo "Screenshots found:"
+            find TestResults/screenshots -type f -name "*.png" | head -10
           else
             echo "has_screenshots=false" >> $GITHUB_OUTPUT
+            echo "No screenshots found. Checking directory contents:"
+            ls -la TestResults/screenshots/ || echo "Directory is empty or inaccessible"
           fi
 
       - name: Upload test results
@@ -62,6 +114,7 @@ jobs:
           path: TestResults
           retention-days: 7
           if-no-files-found: ignore
+          compression-level: 6
 
       - name: Upload screenshots
         if: always() && steps.check_screenshots.outputs.has_screenshots == 'true'
@@ -71,6 +124,7 @@ jobs:
           path: TestResults/screenshots
           retention-days: 7
           if-no-files-found: warn
+          compression-level: 6
 
       - name: Fail if tests failed
         if: steps.run_tests.outcome == 'failure'
