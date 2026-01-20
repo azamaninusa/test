@@ -1,0 +1,80 @@
+name: Docker Tests - Simple
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: vaxcare-tests
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.DOCKER_IMAGE }}:latest .
+
+      - name: Create test results directory
+        run: |
+          mkdir -p TestResults/screenshots TestResults/html
+
+      - name: Run tests
+        id: run_tests
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            --name vaxcare-tests \
+            -v "${{ github.workspace }}/TestResults:/app/TestResults" \
+            ${{ env.DOCKER_IMAGE }}:latest \
+            --filter "FullyQualifiedName~GoogleSearchTest"
+
+      - name: Check screenshots
+        if: always()
+        id: check_screenshots
+        run: |
+          mkdir -p TestResults/screenshots
+          if [ -d "TestResults/screenshots" ]; then
+            SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
+            echo "Found $SCREENSHOT_COUNT screenshot(s)"
+            if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
+              echo "has_screenshots=true" >> $GITHUB_OUTPUT
+              find TestResults/screenshots -type f -name "*.png" | head -10
+            else
+              echo "has_screenshots=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_screenshots=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload screenshots
+        if: always() && steps.check_screenshots.outputs.has_screenshots == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: TestResults/screenshots
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Fail if tests failed
+        if: steps.run_tests.outcome == 'failure'
+        run: |
+          echo "Tests failed"
+          exit 1
+
