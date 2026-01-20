@@ -46,15 +46,21 @@ def find_screenshots_for_test(test_name_or_description):
         return screenshots
     
     # Normalize the test name/description for matching
-    # Remove special characters and convert to lowercase for comparison
+    # Screenshot filenames now use underscores instead of spaces
     def normalize_for_match(text):
-        """Normalize text for matching by removing special chars and lowercasing"""
+        """Normalize text for matching by removing special chars, converting to lowercase, and using underscores"""
         if not text:
             return ""
-        # Remove quotes, apostrophes, and other special chars, keep spaces
-        normalized = re.sub(r"[^\w\s]", "", text.lower())
-        # Collapse multiple spaces
-        normalized = re.sub(r"\s+", " ", normalized).strip()
+        # Convert to lowercase
+        normalized = text.lower()
+        # Replace spaces and underscores with a single underscore
+        normalized = re.sub(r'[\s_]+', '_', normalized)
+        # Remove quotes, apostrophes, and other special chars (keep alphanumeric and underscores)
+        normalized = re.sub(r"[^\w_]", "", normalized)
+        # Collapse multiple underscores
+        normalized = re.sub(r"_+", "_", normalized)
+        # Remove leading/trailing underscores
+        normalized = normalized.strip('_')
         return normalized
     
     normalized_search = normalize_for_match(test_name_or_description)
@@ -64,32 +70,53 @@ def find_screenshots_for_test(test_name_or_description):
     matches = []
     
     # Strategy 1: Direct match with test description (screenshot name often matches test description)
-    # Screenshot format: "Search for 'pen' on Google_20260120_054934.png"
+    # Screenshot format: "Search_for_pen_on_Google_20260120_054934.png" (with underscores)
     # Extract the base name (before timestamp) and normalize
     for png_file in all_png_files:
         filename = os.path.basename(png_file)
+        print(f"Debug: Checking screenshot file: '{filename}'", file=sys.stderr)
+        
         # Remove extension and timestamp pattern (_YYYYMMDD_HHMMSS)
         base_name = re.sub(r'_\d{8}_\d{6}\.png$', '', filename)
         base_name = re.sub(r'\.png$', '', base_name)  # Fallback if no timestamp
         
         normalized_base = normalize_for_match(base_name)
+        print(f"Debug:   Base name: '{base_name}' -> normalized: '{normalized_base}'", file=sys.stderr)
         
-        # Check if normalized search text is contained in normalized base name or vice versa
+        # Check if normalized search text matches normalized base name
         if normalized_search and normalized_base:
-            # Check if significant words match
-            search_words = set(normalized_search.split())
-            base_words = set(normalized_base.split())
+            # Strategy 1a: Exact match (after normalization)
+            if normalized_search == normalized_base:
+                matches.append((png_file, 100))  # High score for exact match
+                print(f"Debug:   ✓ Exact match!", file=sys.stderr)
+                continue
+            
+            # Strategy 1b: Check if search text is contained in base name or vice versa
+            if normalized_search in normalized_base or normalized_base in normalized_search:
+                matches.append((png_file, 50))  # Medium score for substring match
+                print(f"Debug:   ✓ Substring match!", file=sys.stderr)
+                continue
+            
+            # Strategy 1c: Check if significant words match (split by underscores)
+            search_words = set(normalized_search.split('_'))
+            base_words = set(normalized_base.split('_'))
+            
+            # Remove common stop words that don't help matching
+            stop_words = {'for', 'on', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'at', 'to', 'of'}
+            search_words = search_words - stop_words
+            base_words = base_words - stop_words
             
             # If at least 2 words match (or 1 word if search is short), consider it a match
             common_words = search_words.intersection(base_words)
-            if len(common_words) >= min(2, len(search_words)):
+            if len(common_words) >= min(2, len(search_words)) and len(search_words) > 0:
                 matches.append((png_file, len(common_words)))
-                print(f"Debug: Matched screenshot '{filename}' (common words: {common_words})", file=sys.stderr)
+                print(f"Debug:   ✓ Word match! (common words: {common_words})", file=sys.stderr)
     
     # Strategy 2: If no matches, try matching with method name from test name
     if not matches and '.' in test_name_or_description:
         method_name = test_name_or_description.split('.')[-1]
         normalized_method = normalize_for_match(method_name)
+        print(f"Debug: Trying method name match: '{method_name}' (normalized: '{normalized_method}')", file=sys.stderr)
         for png_file in all_png_files:
             filename = os.path.basename(png_file)
             base_name = re.sub(r'_\d{8}_\d{6}\.png$', '', filename)
@@ -99,6 +126,15 @@ def find_screenshots_for_test(test_name_or_description):
             if normalized_method in normalized_base or normalized_base in normalized_method:
                 matches.append((png_file, 1))
                 print(f"Debug: Matched screenshot '{filename}' using method name", file=sys.stderr)
+    
+    # Strategy 3: If still no matches, try to match any screenshot (fallback - show all screenshots for failed tests)
+    if not matches:
+        print(f"Debug: No matches found, using fallback: showing all screenshots", file=sys.stderr)
+        # Sort by modification time (newest first) and take the most recent one
+        all_png_files.sort(key=os.path.getmtime, reverse=True)
+        if all_png_files:
+            matches.append((all_png_files[0], 0))  # Low score for fallback
+            print(f"Debug: Using most recent screenshot: '{os.path.basename(all_png_files[0])}'", file=sys.stderr)
     
     # Sort by match quality (number of common words) and then by modification time
     matches.sort(key=lambda x: (-x[1], os.path.getmtime(x[0])), reverse=True)
