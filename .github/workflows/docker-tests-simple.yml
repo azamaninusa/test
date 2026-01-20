@@ -200,10 +200,11 @@ jobs:
             # TRX format uses namespaces, so we'll use grep/sed to extract data
             
             # Extract all test results (handle both with and without namespaces)
-            TOTAL_TESTS=$(grep -oE 'outcome="[^"]*"' TestResults/TestResults.trx | wc -l || echo "0")
-            PASSED_COUNT=$(grep -oE 'outcome="Passed"' TestResults/TestResults.trx | wc -l || echo "0")
-            FAILED_COUNT=$(grep -oE 'outcome="Failed"' TestResults/TestResults.trx | wc -l || echo "0")
-            SKIPPED_COUNT=$(grep -oE 'outcome="(NotExecuted|Skipped)"' TestResults/TestResults.trx | wc -l || echo "0")
+            # Limit to UnitTestResult lines so we don't count summary/aggregate nodes
+            TOTAL_TESTS=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="[^"]*"' | wc -l || echo "0")
+            PASSED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Passed"' | wc -l || echo "0")
+            FAILED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Failed"' TestResults/TestResults.trx | wc -l || echo "0")
+            SKIPPED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="(NotExecuted|Skipped)"' | wc -l || echo "0")
             
             echo "## Test Statistics" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -228,8 +229,8 @@ jobs:
             if [ "$PASSED_COUNT" -gt 0 ]; then
               echo "## ✅ Passed Tests ($PASSED_COUNT)" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              # Extract test names from lines with outcome="Passed"
-              grep 'outcome="Passed"' TestResults/TestResults.trx | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
+              # Extract test names from UnitTestResult lines with outcome="Passed"
+              grep '<UnitTestResult' TestResults/TestResults.trx | grep 'outcome="Passed"' | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
                 if [ -n "$test" ]; then
                   # Extract class and method name (format: Namespace.Class.Method)
                   if [[ "$test" == *"."* ]]; then
@@ -254,33 +255,32 @@ jobs:
             if [ "$FAILED_COUNT" -gt 0 ]; then
               echo "## ❌ Failed Tests ($FAILED_COUNT)" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              # Extract test names from lines with outcome="Failed"
-              grep 'outcome="Failed"' TestResults/TestResults.trx | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
+              # Extract test names from UnitTestResult lines with outcome=\"Failed\"
+              grep '<UnitTestResult' TestResults/TestResults.trx | grep 'outcome=\"Failed\"' | grep -oE 'testName=\"[^\"]*\"' | sed 's/testName=\"//;s/\"//' | sort -u | while IFS= read -r test; do
                 if [ -n "$test" ]; then
                   # Extract class and method name
+                  DISPLAY_NAME="$test"
                   if [[ "$test" == *"."* ]]; then
                     CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
                     if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
                       CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
                       METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
-                      echo "### \`$CLASS_NAME.$METHOD_NAME\`" >> $GITHUB_STEP_SUMMARY
-                    else
-                      echo "### \`$test\`" >> $GITHUB_STEP_SUMMARY
+                      DISPLAY_NAME="$CLASS_NAME.$METHOD_NAME"
                     fi
-                  else
-                    echo "### \`$test\`" >> $GITHUB_STEP_SUMMARY
                   fi
-                  
+
                   # Try to extract error message for this test (look for Message tag near the test)
-                  ERROR_MSG=$(grep -A 30 "testName=\"$test\"" TestResults/TestResults.trx | grep -oE '<Message[^>]*>[^<]*</Message>' | head -1 | sed 's/<Message[^>]*>//;s/<\/Message>//' | head -c 500 || echo "")
-                  if [ -n "$ERROR_MSG" ]; then
-                    echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-                    echo "$ERROR_MSG" >> $GITHUB_STEP_SUMMARY
-                    echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+                  RAW_ERROR=$(grep -A 30 "testName=\"$test\"" TestResults/TestResults.trx | grep -oE '<Message[^>]*>[^<]*</Message>' | head -1 | sed 's/<Message[^>]*>//;s/<\/Message>//' || echo "")
+                  if [ -n "$RAW_ERROR" ]; then
+                    # Single-line, trimmed snippet for summary
+                    ERROR_SNIPPET=$(echo "$RAW_ERROR" | tr '\n' ' ' | sed 's/  */ /g' | head -c 200)
+                    echo "- \`$DISPLAY_NAME\` - $ERROR_SNIPPET" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "- \`$DISPLAY_NAME\` - (no error message found)" >> $GITHUB_STEP_SUMMARY
                   fi
-                  echo "" >> $GITHUB_STEP_SUMMARY
                 fi
               done
+              echo "" >> $GITHUB_STEP_SUMMARY
             else
               echo "## ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
@@ -292,7 +292,7 @@ jobs:
             if [ "$SKIPPED_COUNT" -gt 0 ]; then
               echo "## ⏭️ Skipped Tests ($SKIPPED_COUNT)" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              grep -E 'outcome="(NotExecuted|Skipped)"' TestResults/TestResults.trx | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
+              grep '<UnitTestResult' TestResults/TestResults.trx | grep -E 'outcome="(NotExecuted|Skipped)"' | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
                 if [ -n "$test" ]; then
                   if [[ "$test" == *"."* ]]; then
                     CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
