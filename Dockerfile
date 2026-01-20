@@ -96,8 +96,8 @@ ENV CHROME_PATH=/usr/bin/google-chrome
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 ENV DISPLAY=:99
 
-# Create reports directory and HTML subdirectory
-RUN mkdir -p /app/TestResults/html
+# Create reports directory, HTML subdirectory, and screenshots directory
+RUN mkdir -p /app/TestResults/html /app/TestResults/screenshots
 
 # Create wrapper script to run tests and generate HTML report
 # This script ensures HTML report is generated regardless of test pass/fail status
@@ -113,6 +113,10 @@ echo "========================================="\n\
 echo "  Running tests..."\n\
 echo "========================================="\n\
 TEST_EXIT_CODE=0\n\
+# Run tests with parallel execution support
+# XUnit parallel execution is controlled by .csproj settings
+# You can override with: --parallel or --no-parallel
+# Use -- to pass additional dotnet test arguments
 dotnet test -c Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory /app/TestResults "$@" || TEST_EXIT_CODE=$?\n\
 \n\
 # Always generate HTML report from TRX file, regardless of test results\n\

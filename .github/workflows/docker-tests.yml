@@ -116,6 +116,8 @@ jobs:
       - name: Create test results directory
         run: |
           mkdir -p TestResults
+          mkdir -p TestResults/screenshots
+          mkdir -p TestResults/html
 
       - name: Run Google Search Test in Docker
         id: run_tests
@@ -169,6 +171,28 @@ jobs:
           if-no-files-found: ignore
           compression-level: 6
 
+      - name: Check screenshots directory
+        if: always()
+        run: |
+          echo "Checking for screenshots..."
+          if [ -d "TestResults/screenshots" ]; then
+            echo "Screenshots directory exists"
+            ls -la TestResults/screenshots/ || echo "Directory is empty or inaccessible"
+            find TestResults/screenshots -type f -name "*.png" | head -10 || echo "No PNG files found"
+          else
+            echo "Screenshots directory does not exist"
+          fi
+
+      - name: Upload screenshots (if test failed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-google-search
+          path: TestResults/screenshots
+          retention-days: 7
+          if-no-files-found: ignore
+          compression-level: 6
+
       - name: Upload all test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -213,7 +237,11 @@ jobs:
           echo "### Reports Available:" >> $GITHUB_STEP_SUMMARY
           echo "Check the Artifacts section for detailed HTML report." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Screenshots:" >> $GITHUB_STEP_SUMMARY
+          echo "Screenshots are automatically captured on test failure and uploaded as artifacts." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Execution Details:" >> $GITHUB_STEP_SUMMARY
           echo "✅ Test ran in Docker container with headless Chrome" >> $GITHUB_STEP_SUMMARY
           echo "✅ HTML report generated automatically" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Screenshots captured on failure" >> $GITHUB_STEP_SUMMARY
 

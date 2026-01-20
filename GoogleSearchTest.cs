@@ -48,6 +48,9 @@ namespace VaxCare.Tests
                     Log.Information("Search results found on page");
                 }
 
+                // INTENTIONALLY FAIL THE TEST - This will trigger screenshot capture
+                throw new Exception("Intentional test failure to demonstrate screenshot capture in HTML report");
+
                 Log.Information("Successfully searched for 'pen' on Google");
             });
         }
