@@ -173,24 +173,37 @@ jobs:
 
       - name: Check screenshots directory
         if: always()
+        id: check_screenshots
         run: |
           echo "Checking for screenshots..."
+          # Ensure directory exists
+          mkdir -p TestResults/screenshots
           if [ -d "TestResults/screenshots" ]; then
             echo "Screenshots directory exists"
             ls -la TestResults/screenshots/ || echo "Directory is empty or inaccessible"
-            find TestResults/screenshots -type f -name "*.png" | head -10 || echo "No PNG files found"
+            SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
+            echo "Found $SCREENSHOT_COUNT screenshot(s)"
+            if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
+              echo "Screenshots found:"
+              find TestResults/screenshots -type f -name "*.png" | head -10
+              echo "has_screenshots=true" >> $GITHUB_OUTPUT
+            else
+              echo "No PNG files found in screenshots directory"
+              echo "has_screenshots=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "Screenshots directory does not exist"
+            echo "has_screenshots=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Upload screenshots (if test failed)
-        if: always()
+        if: always() && steps.check_screenshots.outputs.has_screenshots == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-google-search
           path: TestResults/screenshots
           retention-days: 7
-          if-no-files-found: ignore
+          if-no-files-found: warn
           compression-level: 6
 
       - name: Upload all test results
