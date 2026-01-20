@@ -155,9 +155,17 @@ def find_screenshots_for_test(test_name_or_description):
         dest_path = os.path.join(html_screenshots_dir, screenshot_filename)
         try:
             shutil.copy2(screenshot_path, dest_path)
-            # Return relative path from HTML report
-            screenshots.append(os.path.join('screenshots', screenshot_filename))
-            print(f"Debug: Copied screenshot to HTML report: {screenshot_filename}", file=sys.stderr)
+            # Verify file was copied
+            if os.path.exists(dest_path):
+                # Return relative path from HTML report (use forward slashes for web compatibility)
+                rel_path = f"screenshots/{screenshot_filename}"
+                screenshots.append(rel_path)
+                print(f"Debug: Copied screenshot to HTML report: {screenshot_filename}", file=sys.stderr)
+                print(f"Debug:   Source: {screenshot_path}", file=sys.stderr)
+                print(f"Debug:   Destination: {dest_path}", file=sys.stderr)
+                print(f"Debug:   Relative path: {rel_path}", file=sys.stderr)
+            else:
+                print(f"Warning: Screenshot copy failed - file not found at {dest_path}", file=sys.stderr)
         except Exception as e:
             print(f"Warning: Could not copy screenshot {screenshot_path}: {e}", file=sys.stderr)
     
@@ -264,24 +272,32 @@ for result in results:
             screenshots_html = '<div class="screenshots"><div class="screenshot-title">Screenshots:</div>'
             for screenshot_rel_path in screenshots:
                 screenshot_name = os.path.basename(screenshot_rel_path)
-                # Ensure forward slashes and URL-encode the path properly
+                # Ensure forward slashes (already should be from find_screenshots_for_test)
                 safe_path = screenshot_rel_path.replace('\\', '/')
-                # URL encode the path to handle any special characters
-                url_encoded_path = urllib.parse.quote(safe_path, safe='/')
-                escaped_name = html.escape(screenshot_name)
                 
-                # Use absolute path from HTML file location
-                # The HTML file is in TestResults/html/, screenshots are in TestResults/html/screenshots/
-                # So relative path should be "screenshots/filename.png"
-                if not safe_path.startswith('screenshots/'):
-                    # Extract just the filename if full path is provided
-                    safe_path = os.path.join('screenshots', screenshot_name)
-                    url_encoded_path = urllib.parse.quote(safe_path, safe='/')
+                # Verify the screenshot file actually exists in the HTML report directory
+                screenshot_full_path = os.path.join(html_dir, safe_path)
+                if not os.path.exists(screenshot_full_path):
+                    print(f"Warning: Screenshot file not found at {screenshot_full_path}", file=sys.stderr)
+                    print(f"  Expected relative path: {safe_path}", file=sys.stderr)
+                    print(f"  HTML dir: {html_dir}", file=sys.stderr)
+                    print(f"  HTML screenshots dir: {html_screenshots_dir}", file=sys.stderr)
+                    # Try to find it
+                    if os.path.exists(os.path.join(html_screenshots_dir, screenshot_name)):
+                        safe_path = f"screenshots/{screenshot_name}"
+                        print(f"  Fixed path to: {safe_path}", file=sys.stderr)
+                    else:
+                        print(f"  Screenshot not found in {html_screenshots_dir} either", file=sys.stderr)
+                        continue
+                
+                # Don't URL encode - use the path as-is (forward slashes are fine in URLs)
+                # Only escape the display name for HTML safety
+                escaped_name = html.escape(screenshot_name)
                 
                 screenshots_html += f'''<div class="screenshot-container">
                         <div class="screenshot-title">Screenshot: {escaped_name}</div>
-                        <a href="{url_encoded_path}" target="_blank" class="screenshot-link">
-                            <img src="{url_encoded_path}" alt="Screenshot: {escaped_name}" class="screenshot-img" style="max-width: 800px; display: block; margin-top: 10px;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'color: red;\\'>Failed to load image: {escaped_name}</div>';" />
+                        <a href="{safe_path}" target="_blank" class="screenshot-link">
+                            <img src="{safe_path}" alt="Screenshot: {escaped_name}" class="screenshot-img" style="max-width: 800px; display: block; margin-top: 10px;" onerror="console.error('Failed to load image: {safe_path}'); this.style.display='none'; this.parentElement.innerHTML='<div style=\\'color: red; padding: 10px; border: 1px solid red;\\'><strong>Failed to load image:</strong><br/>Path: {escaped_name}<br/>Check browser console for details.</div>';" />
                         </a>
                     </div>'''
             screenshots_html += '</div>'
