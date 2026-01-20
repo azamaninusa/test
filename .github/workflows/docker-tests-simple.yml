@@ -197,13 +197,9 @@ jobs:
           
           if [ -f "TestResults/TestResults.trx" ]; then
             # Parse TRX file to extract test results
-            # TRX format uses namespaces, so we'll use grep/sed to extract data
-            
-            # Extract all test results (handle both with and without namespaces)
-            # Limit to UnitTestResult lines so we don't count summary/aggregate nodes
             TOTAL_TESTS=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="[^"]*"' | wc -l || echo "0")
             PASSED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Passed"' | wc -l || echo "0")
-            FAILED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Failed"' TestResults/TestResults.trx | wc -l || echo "0")
+            FAILED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Failed"' | wc -l || echo "0")
             SKIPPED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="(NotExecuted|Skipped)"' | wc -l || echo "0")
             
             echo "## Test Statistics" >> $GITHUB_STEP_SUMMARY
@@ -222,149 +218,6 @@ jobs:
             if [ "$TOTAL_TESTS" -gt 0 ]; then
               SUCCESS_RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSED_COUNT / $TOTAL_TESTS) * 100}")
               echo "**Success Rate: ${SUCCESS_RATE}%**" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # Extract passed tests
-            if [ "$PASSED_COUNT" -gt 0 ]; then
-              echo "## ✅ Passed Tests ($PASSED_COUNT)" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              # Extract test names from UnitTestResult lines with outcome="Passed"
-              grep '<UnitTestResult' TestResults/TestResults.trx | grep 'outcome="Passed"' | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
-                if [ -n "$test" ]; then
-                  # Extract class and method name (format: Namespace.Class.Method)
-                  if [[ "$test" == *"."* ]]; then
-                    # Get the last two parts (Class.Method)
-                    CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
-                    if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
-                      CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
-                      METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
-                      echo "- \`$CLASS_NAME.$METHOD_NAME\`" >> $GITHUB_STEP_SUMMARY
-                    else
-                      echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
-                    fi
-                  else
-                    echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
-                  fi
-                fi
-              done
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # Extract failed tests with error messages
-            if [ "$FAILED_COUNT" -gt 0 ]; then
-              echo "## ❌ Failed Tests ($FAILED_COUNT)" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              # Extract test names from UnitTestResult lines with outcome=\"Failed\"
-              grep '<UnitTestResult' TestResults/TestResults.trx | grep 'outcome=\"Failed\"' | grep -oE 'testName=\"[^\"]*\"' | sed 's/testName=\"//;s/\"//' | sort -u | while IFS= read -r test; do
-                if [ -n "$test" ]; then
-                  # Extract class and method name
-                  DISPLAY_NAME="$test"
-                  if [[ "$test" == *"."* ]]; then
-                    CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
-                    if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
-                      CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
-                      METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
-                      DISPLAY_NAME="$CLASS_NAME.$METHOD_NAME"
-                    fi
-                  fi
-
-                  # Extract error message using Python to properly parse XML with namespaces
-                  RAW_ERROR=$(python3 -c "
-import sys
-try:
-    from xml.etree import ElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-import html
-
-trx_file = 'TestResults/TestResults.trx'
-test_name = sys.argv[1]
-
-try:
-    tree = ET.parse(trx_file)
-    root = tree.getroot()
-    ns = {'ns': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
-    for result in root.findall('.//ns:UnitTestResult', ns):
-        if result.get('testName') == test_name and result.get('outcome') == 'Failed':
-            output_elem = result.find('.//ns:Output', ns)
-            if output_elem is not None:
-                error_info = output_elem.find('.//ns:ErrorInfo', ns)
-                if error_info is not None:
-                    message_elem = error_info.find('.//ns:Message', ns)
-                    if message_elem is not None and message_elem.text:
-                        error_text = html.unescape(message_elem.text)
-                        for line in error_text.split('\n'):
-                            line = line.strip()
-                            if line and not line.startswith('Test:') and not line.startswith('Description:'):
-                                print(line[:200])
-                                sys.exit(0)
-                    stack_trace = error_info.find('.//ns:StackTrace', ns)
-                    if stack_trace is not None and stack_trace.text:
-                        error_text = html.unescape(stack_trace.text)
-                        for line in error_text.split('\n'):
-                            line = line.strip()
-                            if line:
-                                print(line[:200])
-                                sys.exit(0)
-            message_elem = result.find('.//ns:Message', ns)
-            if message_elem is not None and message_elem.text:
-                error_text = html.unescape(message_elem.text)
-                for line in error_text.split('\n'):
-                    line = line.strip()
-                    if line:
-                        print(line[:200])
-                        sys.exit(0)
-            output_elem = result.find('.//ns:Output', ns)
-            if output_elem is not None and output_elem.text:
-                error_text = html.unescape(output_elem.text)
-                for line in error_text.split('\n'):
-                    line = line.strip()
-                    if line and not line.startswith('Test:') and not line.startswith('Description:'):
-                        print(line[:200])
-                        sys.exit(0)
-            break
-except Exception:
-    pass
-" "$test" 2>/dev/null || echo "")
-                  
-                  if [ -n "$RAW_ERROR" ]; then
-                    # Clean up and format the error message
-                    ERROR_SNIPPET=$(echo "$RAW_ERROR" | tr '\n' ' ' | sed 's/  */ /g' | head -c 200)
-                    echo "- \`$DISPLAY_NAME\` - $ERROR_SNIPPET" >> $GITHUB_STEP_SUMMARY
-                  else
-                    echo "- \`$DISPLAY_NAME\` - (no error message found)" >> $GITHUB_STEP_SUMMARY
-                  fi
-                fi
-              done
-              echo "" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "## ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "*No tests failed* ✅" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # Extract skipped tests
-            if [ "$SKIPPED_COUNT" -gt 0 ]; then
-              echo "## ⏭️ Skipped Tests ($SKIPPED_COUNT)" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              grep '<UnitTestResult' TestResults/TestResults.trx | grep -E 'outcome="(NotExecuted|Skipped)"' | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
-                if [ -n "$test" ]; then
-                  if [[ "$test" == *"."* ]]; then
-                    CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
-                    if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
-                      CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
-                      METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
-                      echo "- \`$CLASS_NAME.$METHOD_NAME\`" >> $GITHUB_STEP_SUMMARY
-                    else
-                      echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
-                    fi
-                  else
-                    echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
-                  fi
-                fi
-              done
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
           else
