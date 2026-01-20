@@ -189,6 +189,138 @@ jobs:
             fi
           fi
 
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "# 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "TestResults/TestResults.trx" ]; then
+            # Parse TRX file to extract test results
+            # TRX format uses namespaces, so we'll use grep/sed to extract data
+            
+            # Extract all test results (handle both with and without namespaces)
+            TOTAL_TESTS=$(grep -oE 'outcome="[^"]*"' TestResults/TestResults.trx | wc -l || echo "0")
+            PASSED_COUNT=$(grep -oE 'outcome="Passed"' TestResults/TestResults.trx | wc -l || echo "0")
+            FAILED_COUNT=$(grep -oE 'outcome="Failed"' TestResults/TestResults.trx | wc -l || echo "0")
+            SKIPPED_COUNT=$(grep -oE 'outcome="(NotExecuted|Skipped)"' TestResults/TestResults.trx | wc -l || echo "0")
+            
+            echo "## Test Statistics" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED_COUNT |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Failed | $FAILED_COUNT |" >> $GITHUB_STEP_SUMMARY
+            if [ "$SKIPPED_COUNT" -gt 0 ]; then
+              echo "| ⏭️ Skipped | $SKIPPED_COUNT |" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "| 📊 Total | $TOTAL_TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Calculate success rate
+            if [ "$TOTAL_TESTS" -gt 0 ]; then
+              SUCCESS_RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSED_COUNT / $TOTAL_TESTS) * 100}")
+              echo "**Success Rate: ${SUCCESS_RATE}%**" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # Extract passed tests
+            if [ "$PASSED_COUNT" -gt 0 ]; then
+              echo "## ✅ Passed Tests ($PASSED_COUNT)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              # Extract test names from lines with outcome="Passed"
+              grep 'outcome="Passed"' TestResults/TestResults.trx | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
+                if [ -n "$test" ]; then
+                  # Extract class and method name (format: Namespace.Class.Method)
+                  if [[ "$test" == *"."* ]]; then
+                    # Get the last two parts (Class.Method)
+                    CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
+                    if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
+                      CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
+                      METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
+                      echo "- \`$CLASS_NAME.$METHOD_NAME\`" >> $GITHUB_STEP_SUMMARY
+                    else
+                      echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
+                    fi
+                  else
+                    echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
+                  fi
+                fi
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # Extract failed tests with error messages
+            if [ "$FAILED_COUNT" -gt 0 ]; then
+              echo "## ❌ Failed Tests ($FAILED_COUNT)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              # Extract test names from lines with outcome="Failed"
+              grep 'outcome="Failed"' TestResults/TestResults.trx | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
+                if [ -n "$test" ]; then
+                  # Extract class and method name
+                  if [[ "$test" == *"."* ]]; then
+                    CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
+                    if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
+                      CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
+                      METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
+                      echo "### \`$CLASS_NAME.$METHOD_NAME\`" >> $GITHUB_STEP_SUMMARY
+                    else
+                      echo "### \`$test\`" >> $GITHUB_STEP_SUMMARY
+                    fi
+                  else
+                    echo "### \`$test\`" >> $GITHUB_STEP_SUMMARY
+                  fi
+                  
+                  # Try to extract error message for this test (look for Message tag near the test)
+                  ERROR_MSG=$(grep -A 30 "testName=\"$test\"" TestResults/TestResults.trx | grep -oE '<Message[^>]*>[^<]*</Message>' | head -1 | sed 's/<Message[^>]*>//;s/<\/Message>//' | head -c 500 || echo "")
+                  if [ -n "$ERROR_MSG" ]; then
+                    echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+                    echo "$ERROR_MSG" >> $GITHUB_STEP_SUMMARY
+                    echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+                  fi
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                fi
+              done
+            else
+              echo "## ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "*No tests failed* ✅" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # Extract skipped tests
+            if [ "$SKIPPED_COUNT" -gt 0 ]; then
+              echo "## ⏭️ Skipped Tests ($SKIPPED_COUNT)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              grep -E 'outcome="(NotExecuted|Skipped)"' TestResults/TestResults.trx | grep -oE 'testName="[^"]*"' | sed 's/testName="//;s/"//' | sort -u | while IFS= read -r test; do
+                if [ -n "$test" ]; then
+                  if [[ "$test" == *"."* ]]; then
+                    CLASS_METHOD=$(echo "$test" | sed 's/.*\.\([^.]*\.[^.]*\)$/\1/')
+                    if [ -n "$CLASS_METHOD" ] && [[ "$CLASS_METHOD" == *"."* ]]; then
+                      CLASS_NAME=$(echo "$CLASS_METHOD" | sed 's/\.[^.]*$//')
+                      METHOD_NAME=$(echo "$CLASS_METHOD" | sed 's/.*\.//')
+                      echo "- \`$CLASS_NAME.$METHOD_NAME\`" >> $GITHUB_STEP_SUMMARY
+                    else
+                      echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
+                    fi
+                  else
+                    echo "- \`$test\`" >> $GITHUB_STEP_SUMMARY
+                  fi
+                fi
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "## ⚠️ Test Results Not Available" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "TRX file not found. Cannot generate test summary." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            TEST_EXIT_CODE="${{ steps.run_tests.outputs.TEST_EXIT_CODE }}"
+            if [ "$TEST_EXIT_CODE" != "0" ]; then
+              echo "Docker run exited with code: \`$TEST_EXIT_CODE\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
       - name: Fail workflow if tests failed
         if: steps.check_test_results.outputs.TESTS_FAILED == 'true'
         run: |
