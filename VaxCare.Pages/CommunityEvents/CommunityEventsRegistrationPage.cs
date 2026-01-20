@@ -50,6 +50,18 @@ namespace VaxCare.Pages.CommunityEvents
         private const string GetStartedHeader = "//div[@class='enrollment-login-header']/span[contains(text(),'Get Started')]";
         private const string EnrollmentCodeLabel = "//label[@for='PartnerCode' and text()='Enrollment Code']";
 
+        /// <summary>
+        /// Navigates to the Community Events registration page
+        /// </summary>
+        /// <param name="url">The URL of the Community Events registration page</param>
+        /// <returns>The current page instance for fluent chaining</returns>
+        public async Task<CommunityEventsRegistrationPage> NavigateToAsync(string url)
+        {
+            Log.Step($"Navigate to Community Events registration page: {url}");
+            await Driver.NavigateAsync(url, Log);
+            return this;
+        }
+
         public async Task<CommunityEventsRegistrationPage> VerifyEventRegistrationHomePageUIAsync()
         {
             Log.Step("Verify Event Registration Home Page UI elements");

@@ -1,8 +1,8 @@
 using Shouldly;
 using VaxCare.Core;
 using VaxCare.Core.Extensions;
+using VaxCare.Core.WebDriver;
 using VaxCare.Pages.CommunityEvents;
-using VaxCare.Pages.Login;
 using VaxCare.Pages.Portal;
 using Xunit;
 using Xunit.Abstractions;
@@ -30,21 +30,18 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Event Registration Screen UI Verification", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.VerifyEventRegistrationHomePageUIAsync())
                     .Then(async page =>
                     {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.VerifyEventRegistrationHomePageUIAsync();
-                        
                         // Verify Begin Registration button background color
                         var buttonElement = await Driver.FindElementAsync("//input[@class='enrollment-login-button' and @value='Begin Registration']".XPath(), Log);
                         var backgroundColor = await Driver.GetCssValueAsync(buttonElement, "background-color", Log);
                         Log.Information($"Begin Registration button background color: {backgroundColor}");
-                        
-                        await communityEventPage.EnterEnrollmentCodeAsync("Some Text");
                         return page;
-                    });
+                    })
+                    .Then(page => page.EnterEnrollmentCodeAsync("Some Text"));
             });
         }
 
@@ -54,17 +51,14 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Verify User Lands On Event Registration Page", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation))
                     .Then(async page =>
                     {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation);
-                        
                         // Verify elements are present on registration page
                         await Driver.WaitUntilElementLoadsAsync("//img[contains(@src,'images/VaxCareCrossIcon.svg')]".XPath(), Log);
                         await Driver.WaitUntilElementLoadsAsync("//div[text()='Event Registration']/following-sibling::div[text()='School & Community Outreach']".XPath(), Log);
-                        
                         return page;
                     });
             });
@@ -76,27 +70,26 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Community Events Invalid Code Test", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.ClickBeginRegistrationButtonAsync())
                     .Then(async page =>
                     {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.ClickBeginRegistrationButtonAsync();
-                        
                         // Verify invalid code warning appears
-                        var warningPresent = await communityEventPage.VerifyInvalidCodeWarningAsync();
+                        var warningPresent = await page.VerifyInvalidCodeWarningAsync();
                         warningPresent.ShouldBeTrue("Invalid code warning should be displayed");
                         
                         // Verify warning background color
                         var warningElement = await Driver.FindElementAsync("//div[@class='validation-warning enrollment']".XPath(), Log);
                         var backgroundColor = await Driver.GetCssValueAsync(warningElement, "background-color", Log);
                         Log.Information($"Warning background color: {backgroundColor}");
-                        
-                        // Enter valid code and verify warning disappears
-                        await communityEventPage.EnterEnrollmentCodeAndClickBeginRegistrationAsync(EnrollmentCode);
+                        return page;
+                    })
+                    .Then(page => page.EnterEnrollmentCodeAndClickBeginRegistrationAsync(EnrollmentCode))
+                    .Then(async page =>
+                    {
                         var warningStillPresent = await Driver.IsElementPresentAsync("//div[@class='validation-warning enrollment' and contains(@style,'display')]/span[text()='Invalid code.  Please try again or contact the event organizer.']".XPath(), Log);
                         warningStillPresent.ShouldBeFalse("Invalid code warning should disappear after entering valid code");
-                        
                         return page;
                     });
             });
@@ -108,28 +101,27 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Community Events No Clinic Test", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClickBeginRegistrationAsync(EnrollmentCode))
+                    .Then(page => page.ClickContinueButtonAsync())
                     .Then(async page =>
                     {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClickBeginRegistrationAsync(EnrollmentCode);
-                        await communityEventPage.ClickContinueButtonAsync();
-                        
                         // Verify no clinic warning appears
-                        var warningPresent = await communityEventPage.VerifyNoClinicWarningAsync();
+                        var warningPresent = await page.VerifyNoClinicWarningAsync();
                         warningPresent.ShouldBeTrue("No clinic warning should be displayed");
                         
                         // Verify warning color
                         var warningElement = await Driver.FindElementAsync("//span[@id='SelectedClinicId-error' and text()='Please select an event location']".XPath(), Log);
                         var color = await Driver.GetCssValueAsync(warningElement, "color", Log);
                         Log.Information($"Warning color: {color}");
-                        
-                        // Select clinic and verify warning disappears
-                        await communityEventPage.SelectClinicAsync(ClinicLocation);
+                        return page;
+                    })
+                    .Then(page => page.SelectClinicAsync(ClinicLocation))
+                    .Then(async page =>
+                    {
                         var warningStillPresent = await Driver.IsElementPresentAsync("//span[@id='SelectedClinicId-error' and text()='Please select an event location']".XPath(), Log);
                         warningStillPresent.ShouldBeFalse("No clinic warning should disappear after selecting clinic");
-                        
                         return page;
                     });
             });
@@ -141,18 +133,12 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Register Patient With Insurance Test", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
-                    .Then(async page =>
-                    {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation);
-                        await communityEventPage.EnterRegistrationInfoAsync(PatientFirstName, _patientLastName, Insurance);
-                        await communityEventPage.ClickSuccessDialogButtonAsync("Exit");
-                        await communityEventPage.VerifyEventRegistrationHomePageUIAsync();
-                        
-                        return page;
-                    });
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation))
+                    .Then(page => page.EnterRegistrationInfoAsync(PatientFirstName, _patientLastName, Insurance))
+                    .Then(page => page.ClickSuccessDialogButtonAsync("Exit"))
+                    .Then(page => page.VerifyEventRegistrationHomePageUIAsync());
             });
         }
 
@@ -162,18 +148,12 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Register Patient Without Insurance Test", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
-                    .Then(async page =>
-                    {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation);
-                        await communityEventPage.EnterRegistrationInfoAsync(NoInsurancePatientFirstName, _noInsurancePatientLastName, string.Empty);
-                        await communityEventPage.ClickSuccessDialogButtonAsync("Exit");
-                        await communityEventPage.VerifyEventRegistrationHomePageUIAsync();
-                        
-                        return page;
-                    });
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation))
+                    .Then(page => page.EnterRegistrationInfoAsync(NoInsurancePatientFirstName, _noInsurancePatientLastName, string.Empty))
+                    .Then(page => page.ClickSuccessDialogButtonAsync("Exit"))
+                    .Then(page => page.VerifyEventRegistrationHomePageUIAsync());
             });
         }
 
@@ -183,17 +163,11 @@ namespace VaxCare.Tests.CommunityEvents
         {
             await RunTestAsync("Fill Out Patient Registration Blank Field Warning", async () =>
             {
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
-                    .Then(async page =>
-                    {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation);
-                        await communityEventPage.EnterRegistrationInfoAsync(string.Empty, _patientLastName, Insurance);
-                        await communityEventPage.VerifyIncompleteFieldWarningAsync();
-                        
-                        return page;
-                    });
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation))
+                    .Then(page => page.EnterRegistrationInfoAsync(string.Empty, _patientLastName, Insurance))
+                    .Then(page => page.VerifyIncompleteFieldWarningAsync());
             });
         }
 
@@ -206,31 +180,27 @@ namespace VaxCare.Tests.CommunityEvents
                 // Generate unique last name
                 _patientLastName = $"{_patientLastName}_{_generator.Next(100000, 1000000)}";
                 
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation))
+                    .Then(page => page.EnterRegistrationInfoAsync(PatientFirstName, _patientLastName, Insurance))
+                    .Then(page => page.ClickSuccessDialogButtonAsync("Exit"))
+                    .Then(page => page.VerifyEventRegistrationHomePageUIAsync())
                     .Then(async page =>
                     {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation);
-                        await communityEventPage.EnterRegistrationInfoAsync(PatientFirstName, _patientLastName, Insurance);
-                        await communityEventPage.ClickSuccessDialogButtonAsync("Exit");
-                        await communityEventPage.VerifyEventRegistrationHomePageUIAsync();
-                        
                         // Navigate to Portal to verify patient
-                        var portalUrl = communityEventPage.DetermineCorrectEnvironmentPortalUrl();
+                        var portalUrl = page.DetermineCorrectEnvironmentPortalUrl();
                         await Driver.NavigateAsync(portalUrl, Log);
-                        
+                        return page;
+                    })
+                    .Then(async page =>
+                    {
                         // Login to Portal (this would need PortalLogin implementation)
                         // For now, this is a placeholder - would need actual portal login
                         var portalPage = Page<PortalPage>();
                         await portalPage.WaitForAppointmentGridToLoadAsync();
-                        
-                        // Find patient in schedule
                         await portalPage.FindPatientInScheduleAsync(_patientLastName);
-                        
-                        // Verify patient details (this would need additional PortalPage methods)
                         Log.Information($"Patient {_patientLastName}, {PatientFirstName} should be in schedule");
-                        
                         return page;
                     });
             });
@@ -245,30 +215,26 @@ namespace VaxCare.Tests.CommunityEvents
                 // Generate unique last name
                 _noInsurancePatientLastName = $"{_noInsurancePatientLastName}{_generator.Next(100000, 1000000)}";
                 
-                await PageAsync<PortalLogin>()
-                    .Then(page => page.LoginAsync(loginUrl))
+                await PageAsync<CommunityEventsRegistrationPage>()
+                    .Then(page => page.NavigateToAsync(loginUrl))
+                    .Then(page => page.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation))
+                    .Then(page => page.EnterRegistrationInfoAsync(NoInsurancePatientFirstName, _noInsurancePatientLastName, string.Empty))
+                    .Then(page => page.ClickSuccessDialogButtonAsync("Exit"))
+                    .Then(page => page.VerifyEventRegistrationHomePageUIAsync())
                     .Then(async page =>
                     {
-                        var communityEventPage = Page<CommunityEventsRegistrationPage>();
-                        await communityEventPage.EnterEnrollmentCodeAndClinicLocationAsync(EnrollmentCode, ClinicLocation);
-                        await communityEventPage.EnterRegistrationInfoAsync(NoInsurancePatientFirstName, _noInsurancePatientLastName, string.Empty);
-                        await communityEventPage.ClickSuccessDialogButtonAsync("Exit");
-                        await communityEventPage.VerifyEventRegistrationHomePageUIAsync();
-                        
                         // Navigate to Portal to verify patient
-                        var portalUrl = communityEventPage.DetermineCorrectEnvironmentPortalUrl();
+                        var portalUrl = page.DetermineCorrectEnvironmentPortalUrl();
                         await Driver.NavigateAsync(portalUrl, Log);
-                        
+                        return page;
+                    })
+                    .Then(async page =>
+                    {
                         // Login to Portal (this would need PortalLogin implementation)
                         var portalPage = Page<PortalPage>();
                         await portalPage.WaitForAppointmentGridToLoadAsync();
-                        
-                        // Find patient in schedule
                         await portalPage.FindPatientInScheduleAsync(_noInsurancePatientLastName);
-                        
-                        // Verify patient details
                         Log.Information($"Patient {_noInsurancePatientLastName}, {NoInsurancePatientFirstName} should be in schedule");
-                        
                         return page;
                     });
             });
