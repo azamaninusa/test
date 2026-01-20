@@ -30,49 +30,97 @@ html_screenshots_dir = os.path.join(html_dir, 'screenshots')
 os.makedirs(html_screenshots_dir, exist_ok=True)
 
 # Function to find screenshots for a test
-def find_screenshots_for_test(test_name):
-    """Find screenshots matching the test name"""
+def find_screenshots_for_test(test_name_or_description):
+    """Find screenshots matching the test name or description"""
     screenshots = []
     if not os.path.exists(screenshots_dir):
+        print(f"Debug: Screenshots directory not found: {screenshots_dir}", file=sys.stderr)
         return screenshots
     
-    # Extract method name from fully qualified test name (e.g., "VaxCare.Tests.GoogleSearchTest.SearchForPenOnGoogle" -> "SearchForPenOnGoogle")
-    method_name = test_name.split('.')[-1] if '.' in test_name else test_name
+    # Get all PNG files in screenshots directory
+    all_png_files = glob.glob(os.path.join(screenshots_dir, '*.png'))
+    print(f"Debug: Found {len(all_png_files)} PNG files in {screenshots_dir}", file=sys.stderr)
     
-    # Screenshot naming format: {TestName}_{YYYYMMDD}_{HHMMSS}.png
-    # Try multiple patterns to find screenshots
-    all_matches = []
+    if not all_png_files:
+        return screenshots
     
-    # Try to match with method name
-    pattern = os.path.join(screenshots_dir, f'*{method_name}*.png')
-    all_matches.extend(glob.glob(pattern))
+    # Normalize the test name/description for matching
+    # Remove special characters and convert to lowercase for comparison
+    def normalize_for_match(text):
+        """Normalize text for matching by removing special chars and lowercasing"""
+        if not text:
+            return ""
+        # Remove quotes, apostrophes, and other special chars, keep spaces
+        normalized = re.sub(r"[^\w\s]", "", text.lower())
+        # Collapse multiple spaces
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        return normalized
     
-    # Try to match with test name words (screenshot name might have spaces)
-    words = method_name.replace('_', ' ').split()
-    if words:
-        for word in words[:3]:  # Try first 3 words
-            pattern = os.path.join(screenshots_dir, f'*{word}*.png')
-            all_matches.extend(glob.glob(pattern))
+    normalized_search = normalize_for_match(test_name_or_description)
+    print(f"Debug: Searching for screenshots matching: '{test_name_or_description}' (normalized: '{normalized_search}')", file=sys.stderr)
     
-    # Try to match with full test name parts
-    test_parts = test_name.split('.')
-    if len(test_parts) >= 2:
-        class_name = test_parts[-2]  # Class name (e.g., "GoogleSearchTest")
-        pattern = os.path.join(screenshots_dir, f'*{class_name}*.png')
-        all_matches.extend(glob.glob(pattern))
+    # Try multiple matching strategies
+    matches = []
     
-    # Remove duplicates and sort by modification time (newest first)
-    matches = list(set(all_matches))
-    matches.sort(key=os.path.getmtime, reverse=True)
+    # Strategy 1: Direct match with test description (screenshot name often matches test description)
+    # Screenshot format: "Search for 'pen' on Google_20260120_054934.png"
+    # Extract the base name (before timestamp) and normalize
+    for png_file in all_png_files:
+        filename = os.path.basename(png_file)
+        # Remove extension and timestamp pattern (_YYYYMMDD_HHMMSS)
+        base_name = re.sub(r'_\d{8}_\d{6}\.png$', '', filename)
+        base_name = re.sub(r'\.png$', '', base_name)  # Fallback if no timestamp
+        
+        normalized_base = normalize_for_match(base_name)
+        
+        # Check if normalized search text is contained in normalized base name or vice versa
+        if normalized_search and normalized_base:
+            # Check if significant words match
+            search_words = set(normalized_search.split())
+            base_words = set(normalized_base.split())
+            
+            # If at least 2 words match (or 1 word if search is short), consider it a match
+            common_words = search_words.intersection(base_words)
+            if len(common_words) >= min(2, len(search_words)):
+                matches.append((png_file, len(common_words)))
+                print(f"Debug: Matched screenshot '{filename}' (common words: {common_words})", file=sys.stderr)
+    
+    # Strategy 2: If no matches, try matching with method name from test name
+    if not matches and '.' in test_name_or_description:
+        method_name = test_name_or_description.split('.')[-1]
+        normalized_method = normalize_for_match(method_name)
+        for png_file in all_png_files:
+            filename = os.path.basename(png_file)
+            base_name = re.sub(r'_\d{8}_\d{6}\.png$', '', filename)
+            base_name = re.sub(r'\.png$', '', base_name)
+            normalized_base = normalize_for_match(base_name)
+            
+            if normalized_method in normalized_base or normalized_base in normalized_method:
+                matches.append((png_file, 1))
+                print(f"Debug: Matched screenshot '{filename}' using method name", file=sys.stderr)
+    
+    # Sort by match quality (number of common words) and then by modification time
+    matches.sort(key=lambda x: (-x[1], os.path.getmtime(x[0])), reverse=True)
+    
+    # Get unique file paths (remove duplicates)
+    seen_files = set()
+    unique_matches = []
+    for file_path, score in matches:
+        if file_path not in seen_files:
+            seen_files.add(file_path)
+            unique_matches.append(file_path)
+    
+    print(f"Debug: Found {len(unique_matches)} matching screenshots", file=sys.stderr)
     
     # Copy screenshots to HTML report directory and return relative paths
-    for screenshot_path in matches:
+    for screenshot_path in unique_matches:
         screenshot_filename = os.path.basename(screenshot_path)
         dest_path = os.path.join(html_screenshots_dir, screenshot_filename)
         try:
             shutil.copy2(screenshot_path, dest_path)
             # Return relative path from HTML report
             screenshots.append(os.path.join('screenshots', screenshot_filename))
+            print(f"Debug: Copied screenshot to HTML report: {screenshot_filename}", file=sys.stderr)
         except Exception as e:
             print(f"Warning: Could not copy screenshot {screenshot_path}: {e}", file=sys.stderr)
     
@@ -179,11 +227,13 @@ for result in results:
             screenshots_html = '<div class="screenshots"><div class="screenshot-title">Screenshots:</div>'
             for screenshot_rel_path in screenshots:
                 screenshot_name = os.path.basename(screenshot_rel_path)
-                escaped_path = html.escape(screenshot_rel_path)
+                # Don't escape the path - it's a safe relative path, just escape the display name
+                # Use URL encoding for the path if needed, but forward slashes are fine in URLs
+                safe_path = screenshot_rel_path.replace('\\', '/')  # Ensure forward slashes
                 escaped_name = html.escape(screenshot_name)
                 screenshots_html += f'''<div class="screenshot-container">
-                        <a href="{escaped_path}" target="_blank" class="screenshot-link">
-                            <img src="{escaped_path}" alt="Screenshot: {escaped_name}" class="screenshot-img" style="max-width: 800px;" />
+                        <a href="{safe_path}" target="_blank" class="screenshot-link">
+                            <img src="{safe_path}" alt="Screenshot: {escaped_name}" class="screenshot-img" style="max-width: 800px; display: block;" />
                         </a>
                         <div style="font-size: 11px; color: #666; margin-top: 5px;">{escaped_name}</div>
                     </div>'''
