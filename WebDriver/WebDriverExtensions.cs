@@ -284,6 +284,37 @@ namespace VaxCare.Core.WebDriver
                 logger.Information($"Navigating to {url}");
                 driver.Navigate().GoToUrl(url);
             });
+            
+            // Wait for page to be in a ready state to prevent blank screenshots
+            await Task.Run(async () =>
+            {
+                var jsExecutor = (IJavaScriptExecutor)driver;
+                var maxWaitTime = TimeSpan.FromSeconds(10);
+                var startTime = DateTime.Now;
+                
+                while (DateTime.Now - startTime < maxWaitTime)
+                {
+                    try
+                    {
+                        var readyState = jsExecutor.ExecuteScript("return document.readyState");
+                        if (readyState?.ToString() == "complete")
+                        {
+                            // Additional small delay to ensure rendering is complete
+                            await Task.Delay(500);
+                            logger.Information("Page load complete");
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Warning($"Error checking page ready state: {ex.Message}");
+                    }
+                    
+                    await Task.Delay(100);
+                }
+                
+                logger.Warning("Page load timeout - proceeding anyway");
+            });
         }
 
         /// <summary>

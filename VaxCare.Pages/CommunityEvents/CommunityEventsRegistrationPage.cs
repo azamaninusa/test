@@ -51,7 +51,7 @@ namespace VaxCare.Pages.CommunityEvents
         private const string EnrollmentCodeLabel = "//label[@for='PartnerCode' and text()='Enrollment Code']";
 
         /// <summary>
-        /// Navigates to the Community Events registration page
+        /// Navigates to the Community Events registration page and waits for it to load
         /// </summary>
         /// <param name="url">The URL of the Community Events registration page</param>
         /// <returns>The current page instance for fluent chaining</returns>
@@ -59,6 +59,11 @@ namespace VaxCare.Pages.CommunityEvents
         {
             Log.Step($"Navigate to Community Events registration page: {url}");
             await Driver.NavigateAsync(url, Log);
+            
+            // Wait for page to load by waiting for a key element (enrollment code input)
+            // This ensures the page is fully rendered before proceeding, preventing blank screenshots
+            await Driver.WaitUntilElementLoadsAsync(EnrollmentCodeInput.Id(), Log, timeoutInSeconds: 15);
+            
             return this;
         }
 
