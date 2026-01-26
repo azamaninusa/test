@@ -89,6 +89,30 @@ namespace VaxCare.Core.WebDriver
         }
 
         /// <summary>
+        /// Finds all elements matching a single selector.
+        /// </summary>
+        /// <returns>A list of IWebElements matching the selector.</returns>
+        public static async Task<List<IWebElement>> FindAllElementsBySelectorAsync(this IWebDriver driver, By selector, int timeoutInSeconds = 10)
+        {
+            return await Task.Run(() =>
+            {
+                var wait = GetWait(driver, timeoutInSeconds);
+                return wait.Until(drv =>
+                {
+                    var elements = drv.FindElements(selector);
+                    return elements.Count > 0 ? elements.ToList() : null;
+                }) ?? new List<IWebElement>();
+            });
+        }
+
+        public static async Task<List<IWebElement>> FindAllElementsBySelectorAsync(this IWebDriver driver, By selector, ILogger logger, int timeoutInSeconds = 10)
+        {
+            return await driver.Actions()
+                               .WithLogger(logger)
+                               .ExecuteAsync(drv => drv.FindAllElementsBySelectorAsync(selector, timeoutInSeconds), $"Find all Elements matching: {selector}");
+        }
+
+        /// <summary>
         /// Finds and returns a list of all child Elements for a given Parent element. Includes Logging and Retry on Exception.
         /// </summary>
         /// <returns>A list of IWebElements found under the Parent element or a WebDriverTimeoutException will bubble up to indicate error.</returns>
