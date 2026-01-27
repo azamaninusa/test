@@ -8,7 +8,7 @@ using VaxCare.Pages.InternalInventoryManagement;
 
 namespace VaxCare.Pages.Login
 {
-    public class InternalInventoryManagementLogin(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class InternalInventoryManagementLogin(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private static readonly string UserNameFieldId = "i0116";
         private static readonly string NextButtonId = "idSIButton9";

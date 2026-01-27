@@ -12,7 +12,7 @@ namespace VaxCare.Pages.DataEntry
     /// Note: This class currently consolidates functionality from multiple pages.
     /// Consider refactoring into separate page objects (DataEntryBatchProcessingPage, DataEntryConsentFormPage, etc.) as the framework grows.
     /// </summary>
-    public class DataEntryHomePage(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class DataEntryHomePage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private const string HomePageLogoId = "lnkConsentBatchIndex";
         

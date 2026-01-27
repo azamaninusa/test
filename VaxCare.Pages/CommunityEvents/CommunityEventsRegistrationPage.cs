@@ -10,7 +10,7 @@ namespace VaxCare.Pages.CommunityEvents
     /// <summary>
     /// Community Events Registration Page - Handles patient registration for community events
     /// </summary>
-    public class CommunityEventsRegistrationPage(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class CommunityEventsRegistrationPage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         // Selectors
         private const string EnrollmentCodeInput = "PartnerCode";

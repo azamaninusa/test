@@ -64,8 +64,9 @@ namespace VaxCare.Core
         // TODO Refactor and remove constructorArgs
         protected T Page<T>(params object[] args) where T : BasePage
         {
-            var constructorArgs = new object[] { Driver, Log }.Concat(args).ToArray();
-            return (T)Activator.CreateInstance(typeof(T), Driver, Log)!;
+            var webDriverActor = new WebDriverActor(Driver);
+            var constructorArgs = new object[] { webDriverActor, Log }.Concat(args).ToArray();
+            return (T)Activator.CreateInstance(typeof(T), webDriverActor, Log)!;
         }
 
         // Allows for a new page to be instantiated allowing for the page to be initialized first!

@@ -7,7 +7,7 @@ using VaxCare.Core.WebDriver;
 
 namespace VaxCare.Pages.InternalInventoryManagement
 {
-    public class InternalInventoryManagementPage(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class InternalInventoryManagementPage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private const string SidebarMenuHamburger = "/html/body/app-root/app-side-nav/label/div[1]";
         private const string PendingOrdersTab = "Pending Orders";

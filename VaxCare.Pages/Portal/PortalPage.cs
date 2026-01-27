@@ -11,7 +11,7 @@ using VaxCare.Core.WebDriver;
 
 namespace VaxCare.Pages.Portal
 {
-    public class PortalPage(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class PortalPage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private IWebElement? TestPatientInSchedule { get; set; }
         private List<IWebElement> VisitsInSchedule { get; set; } = [];

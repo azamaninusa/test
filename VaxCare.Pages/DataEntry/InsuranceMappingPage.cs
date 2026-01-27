@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Extensions;
@@ -7,7 +7,7 @@ using VaxCare.Core.WebDriver;
 
 namespace VaxCare.Pages.DataEntry
 {
-    public class InsuranceMappingPage(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class InsuranceMappingPage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private const string HomePageLogoId = "lnkConsentBatchIndex";
         private const string DropdownState = "//*[@id=\"MappingFallouts\"]/div[1]/table/tr[2]/td[2]/select";

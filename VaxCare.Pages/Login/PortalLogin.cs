@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Entities;
@@ -9,7 +9,7 @@ using VaxCare.Pages.Portal;
 
 namespace VaxCare.Pages.Login
 {
-    public class PortalLogin(IWebDriver driver, ILogger logger) : BasePage(driver, logger)
+    public class PortalLogin(IWebDriverActor driver, ILogger logger) : BasePage(driver, logger)
     {
         private static string IncorrectPassword { get; } = "IncorrectPassword";
         private static string User { get; set; } = "";

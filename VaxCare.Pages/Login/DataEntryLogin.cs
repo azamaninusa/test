@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Extensions;
@@ -8,7 +8,7 @@ using VaxCare.Pages.DataEntry;
 
 namespace VaxCare.Pages.Login
 {
-    public class DataEntryLogin(IWebDriver driver, ILogger log) : BasePage(driver, log)
+    public class DataEntryLogin(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private static readonly string UserNameFieldId = "i0116";
         private static readonly string NextButtonId = "idSIButton9";
