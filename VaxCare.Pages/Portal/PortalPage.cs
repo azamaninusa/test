@@ -1,4 +1,4 @@
-using OpenQA.Selenium;
+﻿using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Entities.Patients;
@@ -34,16 +34,18 @@ namespace VaxCare.Pages.Portal
         private const string AddNewPatientButton = "add-patients-to-schedule-sub-header";
         private const string AddPatientWindow = "AppointmentCreateModal";
         private const string SearchPatientTextBox = "searchPatientInput";
-        private const string ProviderTextBoxId = "provider";
-        private const string EligibilityInProgressText = "//div[contains(@class, 'loadingMessage')]";
-        private const string RiskIcon = "//*[@id=\"eligibility-icon\"]/span[contains(@class,'{0}')]";
-        private const string PatientInfoRiskDescriptionCN = "//span[contains(@class,'eligibility-description')]";
-        private const string PatientInfoRiskDetails = "//p[contains(@class,'fade eligibility-details')]";
-        private const string ScheduleRiskDescriptionCN = "//*[@class= 'eligibilitydescription']";
-        private const string ScheduleRiskDetails = ".//div[contains(@class,'eligibilitydetails')]";
+        private const string ProviderTextBoxId = "provider";
+        private const string EligibilityInProgressText = "//div[contains(@class, 'loadingMessage')]";
+        private const string RiskIcon = "//*[@id=\"eligibility-icon\"]/span[contains(@class,'{0}')]";
+        private const string PatientInfoRiskDescriptionCN = "//span[contains(@class,'eligibility-description')]";
+        private const string PatientInfoRiskDetails = "//p[contains(@class,'fade eligibility-details')]";
+        private const string ScheduleRiskDescriptionCN = "//*[@class= 'eligibilitydescription']";
+        private const string ScheduleRiskDetails = ".//div[contains(@class,'eligibilitydetails')]";
         private const string PatientInSearchBox = "//div[contains(@id,'cdk-overlay')]//span[@class='patient-name']/span[text()='{0}']";
         private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
         private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
+        private const string ProviderSelected = "//input[@id='provider' and @aria-invalid='false']";
+        private const string NewlyCreatedPatientProvider = "Dean Morris";
 
         // Clinic/location selectors used by VerifyAppointmentLocationAndDayCanBeChanged helpers
         private const string ClinicDropdown = "//mat-select[@id='clinicDropDown']//div[contains(@class,'mat-select-arrow')]";
@@ -322,14 +324,26 @@ namespace VaxCare.Pages.Portal
             else
                 await SearchForPatientAsync(patient);
 
-            await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id());
-            var providerText = await Driver.GetTextAsync(ProviderTextBoxId.Id());
+            // Check if provider field is empty (match legacy behavior)
+            await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id());
+            var providerValue = await Driver.FindElementAsync(ProviderTextBoxId.Id());
+            var providerValueAttribute = providerValue?.GetAttribute("value") ?? string.Empty;
 
-            if (string.IsNullOrEmpty(providerText))
-            {
-                await Driver.ClickAsync(ProviderTextBoxId.Id());
-                await Driver.ClickAsync(FirstProviderOption.XPath());
-            }
+            if (string.IsNullOrEmpty(providerValueAttribute))
+            {
+                // Match legacy SelectProvider behavior: type last name, then select full name
+                var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris"
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
+                await Task.Delay(3000); // Match legacy Sleep(3000)
+                
+                // Select the provider option containing the full name
+                var providerOptionXpath = string.Format(ProviderNameInSearch, NewlyCreatedPatientProvider);
+                await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
+                await Driver.ClickAsync(providerOptionXpath.XPath());
+                
+                // Wait for provider to be selected (match legacy WaitForElementToAppear)
+                await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+            }
 
             await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
             await Driver.ClickAsync(DoneButton.Id());
@@ -339,12 +353,7 @@ namespace VaxCare.Pages.Portal
 
         private async Task CreateNewPatientAsync(TestPatient patient, string insuranceName = "Uninsured")
         {
-            // Open the \"Create New Patient\" modal
-            await Driver.ClickAsync(CreateNewPatientButton.Id());
-
-            // Wait for the patient info window to be fully loaded before typing
-            await Driver.WaitUntilElementLoadsAsync(AddPatientWindow.Id(), 15);
-
+            await Driver.ClickAsync(CreateNewPatientButton.Id());
             await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
             await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
             await SelectMatDropdownOptionAsync(NewPatientGender.Id(), patient.Gender == 1 ? "Male" : "Female");
