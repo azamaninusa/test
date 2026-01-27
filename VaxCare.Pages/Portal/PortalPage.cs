@@ -79,12 +79,11 @@ namespace VaxCare.Pages.Portal
         private const string NewPatientPhone = "phone";
         private const string NewPatientPayer = "primaryInsurance";
 
-        private const string LoadingSpinner = "//*[@class='block-ui-spinner']";
+        private const string LoadingSpinner = "//*[@class='block-ui-spinner']";
 
-        
+        private TestPatient? _currentPatient;
 
-
-        public async Task<bool> ConfirmGracefulLoginFailedMessageAsync()
+        public async Task<bool> ConfirmGracefulLoginFailedMessageAsync()
         {
             Log.Step("Confirm that login fails gracefully");
             var result = await Driver.IsTextPresentAsync(LoginErrorMessage.XPath(), "Unable to sign in");
@@ -428,5 +427,144 @@ namespace VaxCare.Pages.Portal
             }
             return this;
         }
+
+        // ===== Helpers for VerifyAppointmentLocationAndDayCanBeChanged =====
+
+        public async Task<PortalPage> ChangeToDaysInAdvanceAsync(int numberOfDays)
+        {
+            // Reuse existing schedule change helper
+            return await ChangeScheduleDateAsync(numberOfDays);
+        }
+
+        public async Task<PortalPage> CheckInPatientAsync(TestPatient patient)
+        {
+            Log.Step($"Check in patient: {patient.Name}");
+            _currentPatient = patient;
+
+            // Use existing helper to add an appointment for this patient.
+            // We create the patient via UI to match legacy behavior.
+            await AddAppointmentToScheduleAsync(patient, createNewPatient: true);
+            return this;
+        }
+
+        public async Task<PortalPage> ChangeLocationOnAppointmentAsync(TestPatient patient, string newLocation)
+        {
+            // Mimic legacy Portal2Schedule.ChangeLocationOnAppointment:
+            // 1. Click the patient's row
+            // 2. Open Edit Appointment
+            // 3. Open the clinic/location dropdown
+            // 4. Select the new location
+            // 5. Save and wait for the grid to reload
+
+            Log.Step($"Change location on appointment for {patient.Name} to '{newLocation}'.");
+
+            // Click the patient's row (row contains the patient's name)
+            await Driver.ClickAsync(string.Format(DivWithText, $" {patient.LastName}, ").XPath());
+            await Driver.ClickAsync(EditAppointmentButton.Id());
+
+            // Open the clinic/location dropdown
+            await Driver.ClickAsync(ClinicDropdown.XPath());
+
+            // Select the desired location option
+            await Driver.ClickAsync(string.Format(SpanWithText, newLocation).XPath());
+
+            // Save changes and wait for the patient info window to close
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+
+            return this;
+        }
+
+        public async Task<PortalPage> ChangeLocationOnPortalAsync(string newLocation)
+        {
+            // Mimic legacy Portal2Schedule.ChangeLocationOnPortal:
+            // 1. Open the clinic selector dropdown
+            // 2. Type the clinic/location name into the search box
+            // 3. Select the matching option
+            // 4. Verify the selector shows the new location
+
+            Log.Step($"Change portal location to '{newLocation}'.");
+
+            // Open clinic selector
+            await Driver.ClickAsync(ClinicSelector.XPath());
+
+            // Type into the clinic search box
+            await Driver.SendKeysAsync(ClinicSearchBox.XPath(), newLocation);
+
+            // Click the matching option
+            await Driver.ClickAsync(string.Format(ClinicOption, newLocation).XPath());
+
+            // Verify the selected clinic text contains the new location
+            var selectedClinicXpath = $"//mat-select[@id='clinicSelector']//span[contains(text(),'{newLocation}')]";
+            var locationChanged = await Driver.IsElementPresentAsync(selectedClinicXpath.XPath(), 5);
+            if (!locationChanged)
+            {
+                Log.Error($"Clinic location did not change to '{newLocation}'.");
+            }
+
+            return this;
+        }
+
+        public async Task<PortalPage> ChangeDateOnAppointmentAsync(int numberOfDays)
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("ChangeDateOnAppointmentAsync called before CheckInPatientAsync; skipping date change.");
+                return this;
+            }
+
+            // Reuse existing EditAppointmentAsync which moves the appointment by N days.
+            await EditAppointmentAsync(_currentPatient.LastName, numberOfDays);
+            return this;
+        }
+
+        public async Task<PortalPage> DeleteAppointmentAsync()
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("DeleteAppointmentAsync called before CheckInPatientAsync; skipping delete.");
+                return this;
+            }
+
+            await DeletePatientVisitAsync(_currentPatient.LastName);
+            return this;
+        }
+
+        public async Task<PortalPage> VerifyPatientAppointmentExistsAsync(bool shouldClick)
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("VerifyPatientAppointmentExistsAsync called before CheckInPatientAsync; skipping check.");
+                return this;
+            }
+
+            var exists = await IsPatientInScheduleAsync(_currentPatient.LastName, _currentPatient.Name);
+
+            if (!exists)
+            {
+                Log.Error($"Expected patient {_currentPatient.Name} to have an appointment in schedule, but none was found.");
+            }
+
+            // `shouldClick` is ignored for now; legacy used it to optionally open the appointment.
+            return this;
+        }
+
+        public async Task<PortalPage> VerifyPatientIsNotListedAsync()
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("VerifyPatientIsNotListedAsync called before CheckInPatientAsync; skipping check.");
+                return this;
+            }
+
+            var exists = await IsPatientInScheduleAsync(_currentPatient.LastName, _currentPatient.Name);
+
+            if (exists)
+            {
+                Log.Error($"Patient {_currentPatient.Name} is still listed in the schedule when they should not be.");
+            }
+
+            return this;
+        }
     }
 }

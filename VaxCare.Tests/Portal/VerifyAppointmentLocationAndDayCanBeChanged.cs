@@ -19,13 +19,13 @@ namespace VaxCare.Tests.Portal
         }
 
         [Theory]
-        [InlineData("https://identitystg.vaxcare.com", "QaRobot")]
-        public async Task PortalVerifyAppointmentLocationAndDayCanBeChanged(string url, string userName)
+        [InlineData("https://identitystg.vaxcare.com", "QaRobot", "Verify Appointment Location and Day Can Be Changed")]
+        public async Task PortalVerifyAppointmentLocationAndDayCanBeChanged(string url, string userName, string testDescription)
         {
             var user = await _fixture.GetUserAsync(userName);
             var patient = TestPatients.SharonRiskFree();
 
-            await RunTestAsync("Verify Appointment Location and Day Can Be Changed", async () =>
+            await RunTestAsync(testDescription, async () =>
             {
                 await _fixture.SetupAsync(Log, user.ClinicId);
 
