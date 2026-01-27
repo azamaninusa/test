@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Entities.Patients;
@@ -314,60 +314,164 @@ namespace VaxCare.Pages.Portal
             return data;
         }
 
-        public async Task<PortalPage> AddAppointmentToScheduleAsync(TestPatient patient, bool createNewPatient)
-        {
-            Log.Step("Add new Appointment to the schedule");
-            await Driver.ClickAsync(AddNewPatientButton.Id());
-
-            if (createNewPatient)
-                await CreateNewPatientAsync(patient);
-            else
-                await SearchForPatientAsync(patient);
-
-            // Check if provider field is empty (match legacy behavior)
-            await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id());
-            var providerValue = await Driver.FindElementAsync(ProviderTextBoxId.Id());
-            var providerValueAttribute = providerValue?.GetAttribute("value") ?? string.Empty;
-
-            if (string.IsNullOrEmpty(providerValueAttribute))
+        public async Task<PortalPage> AddAppointmentToScheduleAsync(TestPatient patient, bool createNewPatient)
+        {
+            Log.Step($"AddAppointmentToScheduleAsync: Starting to add appointment for patient {patient.Name} (createNewPatient={createNewPatient})");
+            Log.Information($"Location: PortalPage.AddAppointmentToScheduleAsync (line ~317)");
+            
+            try
             {
-                // Match legacy SelectProvider behavior: type last name, then select full name
-                var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris"
-                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
-                await Task.Delay(3000); // Match legacy Sleep(3000)
-                
-                // Select the provider option containing the full name
-                var providerOptionXpath = string.Format(ProviderNameInSearch, NewlyCreatedPatientProvider);
-                await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
-                await Driver.ClickAsync(providerOptionXpath.XPath());
-                
-                // Wait for provider to be selected (match legacy WaitForElementToAppear)
-                await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+                Log.Information("Step 1: Clicking 'Add New Patient' button");
+                await Driver.ClickAsync(AddNewPatientButton.Id());
+                Log.Information("✓ Successfully clicked 'Add New Patient' button");
+
+                if (createNewPatient)
+                {
+                    Log.Information("Step 2: Creating new patient via UI");
+                    await CreateNewPatientAsync(patient);
+                    Log.Information($"✓ Successfully created new patient: {patient.FirstName} {patient.LastName}");
+                }
+                else
+                {
+                    Log.Information("Step 2: Searching for existing patient");
+                    await SearchForPatientAsync(patient);
+                    Log.Information($"✓ Successfully searched for patient: {patient.Name}");
+                }
+
+                // Check if provider field is empty (match legacy behavior)
+                Log.Information("Step 3: Checking provider field value");
+                await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id());
+                var providerValue = await Driver.FindElementAsync(ProviderTextBoxId.Id());
+                var providerValueAttribute = providerValue?.GetAttribute("value") ?? string.Empty;
+                Log.Information($"Provider field current value: '{(string.IsNullOrEmpty(providerValueAttribute) ? "(empty)" : providerValueAttribute)}'");
+
+                if (string.IsNullOrEmpty(providerValueAttribute))
+                {
+                    Log.Information("Step 4: Provider field is empty, selecting provider");
+                    // Match legacy SelectProvider behavior: type last name, then select full name
+                    var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris"
+                    Log.Information($"Typing provider last name '{providerLastName}' into provider field");
+                    await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
+                    await Task.Delay(3000); // Match legacy Sleep(3000)
+                    Log.Information("✓ Typed provider last name, waiting for dropdown options");
+                    
+                    // Select the provider option containing the full name
+                    var providerOptionXpath = string.Format(ProviderNameInSearch, NewlyCreatedPatientProvider);
+                    Log.Information($"Waiting for provider option '{NewlyCreatedPatientProvider}' to appear");
+                    await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
+                    Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
+                    await Driver.ClickAsync(providerOptionXpath.XPath());
+                    
+                    // Wait for provider to be selected (match legacy WaitForElementToAppear)
+                    Log.Information("Waiting for provider to be confirmed as selected");
+                    await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+                    Log.Information($"✓ Successfully selected provider: {NewlyCreatedPatientProvider}");
+                }
+                else
+                {
+                    Log.Information($"Step 4: Provider field already has value '{providerValueAttribute}', skipping provider selection");
+                }
+
+                Log.Information("Step 5: Clicking 'Add Appointment to Schedule' button");
+                await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
+                Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button");
+
+                Log.Information("Step 6: Clicking 'Done' button");
+                await Driver.ClickAsync(DoneButton.Id());
+                Log.Information("✓ Successfully clicked 'Done' button");
+
+                Log.Step($"AddAppointmentToScheduleAsync: Successfully completed adding appointment for {patient.Name}");
+                return this;
             }
+            catch (Exception ex)
+            {
+                Log.Error($"AddAppointmentToScheduleAsync FAILED for patient {patient.Name} at PortalPage.AddAppointmentToScheduleAsync (line ~317)");
+                Log.Error($"Error details: {ex.Message}");
+                Log.Error($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
 
-            await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
-            await Driver.ClickAsync(DoneButton.Id());
+        private async Task CreateNewPatientAsync(TestPatient patient, string insuranceName = "Uninsured")
+        {
+            Log.Information($"CreateNewPatientAsync: Starting to create new patient {patient.FirstName} {patient.LastName}");
+            Log.Information($"Location: PortalPage.CreateNewPatientAsync (line ~354)");
+            
+            try
+            {
+                Log.Information("Step 1: Clicking 'Create New Patient' button");
+                await Driver.ClickAsync(CreateNewPatientButton.Id());
+                Log.Information("✓ Successfully clicked 'Create New Patient' button");
 
-            return this;
-        }
+                // Wait for the patient info window to be fully loaded before typing
+                Log.Information("Step 2: Waiting for patient information modal to load");
+                await Driver.WaitUntilElementLoadsAsync(AddPatientWindow.Id(), 15);
+                Log.Information("✓ Patient information modal loaded");
 
-        private async Task CreateNewPatientAsync(TestPatient patient, string insuranceName = "Uninsured")
-        {
-            await Driver.ClickAsync(CreateNewPatientButton.Id());
-            await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
-            await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
-            await SelectMatDropdownOptionAsync(NewPatientGender.Id(), patient.Gender == 1 ? "Male" : "Female");
-            await Driver.SendKeysAsync(NewPatientDoB.Id(), patient.DoB);
-            await Driver.SendKeysAsync(NewPatientPhone.Id(), patient.PhoneNumber);
-            await Driver.SendKeysAsync(NewPatientPayer.Id(), insuranceName);
-            await Driver.ClickAsync(SaveButton.XPath());
-        }
+                Log.Information($"Step 3: Entering first name: '{patient.FirstName}'");
+                await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
+                Log.Information($"✓ Entered first name: {patient.FirstName}");
 
-        private async Task SelectMatDropdownOptionAsync(By selector, string option)
-        {
-            await Driver.ClickAsync(selector);
-            await Driver.ClickAsync(string.Format(SpanWithText, option).XPath());
-        }
+                Log.Information($"Step 4: Entering last name: '{patient.LastName}'");
+                await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
+                Log.Information($"✓ Entered last name: {patient.LastName}");
+
+                var genderText = patient.Gender == 1 ? "Male" : "Female";
+                Log.Information($"Step 5: Selecting gender: '{genderText}'");
+                await SelectMatDropdownOptionAsync(NewPatientGender.Id(), genderText);
+                Log.Information($"✓ Selected gender: {genderText}");
+
+                Log.Information($"Step 6: Entering date of birth: '{patient.DoB}'");
+                await Driver.SendKeysAsync(NewPatientDoB.Id(), patient.DoB);
+                Log.Information($"✓ Entered DOB: {patient.DoB}");
+
+                Log.Information($"Step 7: Entering phone number: '{patient.PhoneNumber}'");
+                await Driver.SendKeysAsync(NewPatientPhone.Id(), patient.PhoneNumber);
+                Log.Information($"✓ Entered phone: {patient.PhoneNumber}");
+
+                Log.Information($"Step 8: Entering payer/insurance: '{insuranceName}'");
+                await Driver.SendKeysAsync(NewPatientPayer.Id(), insuranceName);
+                Log.Information($"✓ Entered payer: {insuranceName}");
+
+                Log.Information("Step 9: Clicking 'Save' button to create patient");
+                await Driver.ClickAsync(SaveButton.XPath());
+                Log.Information("✓ Successfully clicked 'Save' button");
+
+                Log.Information($"CreateNewPatientAsync: Successfully created patient {patient.FirstName} {patient.LastName}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"CreateNewPatientAsync FAILED for patient {patient.FirstName} {patient.LastName} at PortalPage.CreateNewPatientAsync (line ~354)");
+                Log.Error($"Error details: {ex.Message}");
+                Log.Error($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        private async Task SelectMatDropdownOptionAsync(By selector, string option)
+        {
+            Log.Information($"SelectMatDropdownOptionAsync: Selecting option '{option}' from dropdown");
+            Log.Information($"Location: PortalPage.SelectMatDropdownOptionAsync (line ~451)");
+            
+            try
+            {
+                Log.Information($"Step 1: Clicking dropdown to open options");
+                await Driver.ClickAsync(selector);
+                Log.Information("✓ Dropdown opened");
+
+                var optionXpath = string.Format(SpanWithText, option);
+                Log.Information($"Step 2: Clicking option '{option}' (XPath: {optionXpath})");
+                await Driver.ClickAsync(optionXpath.XPath());
+                Log.Information($"✓ Successfully selected option: {option}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"SelectMatDropdownOptionAsync FAILED while selecting '{option}' at PortalPage.SelectMatDropdownOptionAsync (line ~451)");
+                Log.Error($"Error details: {ex.Message}");
+                Log.Error($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
 
         private async Task SearchForPatientAsync(TestPatient patient)
         {
