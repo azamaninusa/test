@@ -63,6 +63,7 @@ namespace VaxCare.Pages.Portal
         private const string PatientWithApptTimeAndNameXpath = "//div[@id='table-container']//tr//div[text()='{0}']/ancestor::td[contains(@class,'column-patientname')]/following-sibling::td[contains(@class,'appointmenttime')]/span[text()='{1}']";
         private const string PatientRowWithLastNameXpath = "//div[@id='table-container']//tr//div[text()=' {0}, ']/ancestor::tr[contains(@class,'appt-row')]";
         private const string AppointmentTimeSpanXpath = ".//td[contains(@class,'appointmenttime')]//span";
+        private const string PatientAppointmentOnSchedulerXpath = "//tbody[contains(@class,'ng-tns')]/tr//div[contains(@class,'patientname')]/div[text()='{0}']";
 
         private const string LoadingIcon = "app-loading-image";
         private const string DatePicker = "datepickerTitle";
@@ -93,8 +94,11 @@ namespace VaxCare.Pages.Portal
         private const string NewPatientPayer = "primaryInsurance";
 
         private const string LoadingSpinner = "//*[@class='block-ui-spinner']";
+        private const string AppointmentGridLoadedXpath = "//div[@id='chmln-dom' and not(@aria-hidden)]";
 
         private TestPatient? _currentPatient;
+        private DateTime _appointmentDate = DateTime.Today;
+        private string? _appointmentTime;
 
         public async Task<bool> ConfirmGracefulLoginFailedMessageAsync()
         {
@@ -136,15 +140,17 @@ namespace VaxCare.Pages.Portal
             return VisitsInSchedule.Count > 0;
         }
 
-        public async Task<PortalPage> WaitForAppointmentGridToLoadAsync()
-        {
-            int timeout = 40;
-            Log.Step("Step: Wait for appointment grid to load.");
-            await Driver.WaitForElementToDisappearAsync(LoadingIcon.ClassName(), timeout);
-            await Driver.WaitUntilElementLoadsAsync(DatePicker.ClassName(), timeout);
-            //await Driver.CheckBrowserConsoleErrorsAsync(Log);
-            return this;
-        }
+        public async Task<PortalPage> WaitForAppointmentGridToLoadAsync()
+        {
+            int timeout = 40;
+            Log.Step("Step: Wait for appointment grid to load.");
+            await Driver.WaitForElementToDisappearAsync(LoadingIcon.ClassName(), timeout);
+            await Driver.WaitUntilElementLoadsAsync(DatePicker.ClassName(), timeout);
+            // This ensures that Appt grid has loaded completely after deleting an appt (matching legacy)
+            await Driver.WaitUntilElementLoadsAsync(AppointmentGridLoadedXpath.XPath(), timeout);
+            //await Driver.CheckBrowserConsoleErrorsAsync(Log);
+            return this;
+        }
 
         public async Task<PortalPage> FindPatientInScheduleAsync(string lastName)
         {
@@ -563,37 +569,63 @@ namespace VaxCare.Pages.Portal
             return IspatientInformationWindowOpen;
         }
 
-        public async Task<PortalPage> EditAppointmentAsync(string lastName, int days)
-        {
-            var date = DateTime.Now.AddDays(days).Date.ToString("MM-dd-yyyy");
+        public async Task<PortalPage> EditAppointmentAsync(string lastName, int days)
+        {
+            // Use stored appointmentDate and add days (matching legacy behavior)
+            var date = _appointmentDate.AddDays(days).ToString("M/d/yyyy");
 
-            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
-            await Driver.ClickAsync(EditAppointmentButton.Id(), 15);
-            await Driver.ClickAsync(DatePickerInput.Id(), 15);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), date);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
-            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 15);
-            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.ClickAsync(EditAppointmentButton.Id(), 15);
+            await Driver.ClickAsync(DatePickerInput.Id(), 15);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), date);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 15);
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
 
-            return this;
-        }
+            return this;
+        }
 
-        public async Task<PortalPage> ChangeScheduleDateAsync(int days)
-        {
-            Log.Step($"Change schedule date by {days} days.");
-            for (int i = 0; i < days; i++)
-            {
-                await Driver.ClickAsync(ArrowButton.XPath());
-            }
-            return this;
-        }
+        /// <summary>
+        /// Gets the count of patient appointments matching the current patient's last name and appointment time.
+        /// Matches legacy GetPatientAppointmentsCount behavior.
+        /// </summary>
+        private async Task<int> GetPatientAppointmentsCountAsync()
+        {
+            if (_currentPatient == null || string.IsNullOrEmpty(_appointmentTime))
+            {
+                Log.Warning("GetPatientAppointmentsCountAsync: Missing patient or appointment time");
+                return 0;
+            }
+
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
+            // Use FindAllElementsAsync with parent and child selectors (matching legacy GetElements behavior)
+            var appointments = await Driver.FindAllElementsAsync(
+                By.XPath("//div[@id='table-container']"),
+                By.XPath(scheduledPatientXpath),
+                10);
+            
+            return appointments.Count;
+        }
+
+        public async Task<PortalPage> ChangeScheduleDateAsync(int days)
+        {
+            Log.Step($"Change schedule date by {days} days.");
+            _appointmentDate = DateTime.Today.AddDays(days);
+            for (int i = 0; i < days; i++)
+            {
+                await Driver.ClickAsync(ArrowButton.XPath());
+            }
+            return this;
+        }
 
         // ===== Helpers for VerifyAppointmentLocationAndDayCanBeChanged =====
 
         public async Task<PortalPage> ChangeToDaysInAdvanceAsync(int numberOfDays)
         {
+            // Store appointment date (matching legacy behavior)
+            _appointmentDate = DateTime.Today.AddDays(numberOfDays);
             // Reuse existing schedule change helper
             return await ChangeScheduleDateAsync(numberOfDays);
         }
@@ -684,8 +716,39 @@ namespace VaxCare.Pages.Portal
                 return this;
             }
 
-            // Reuse existing EditAppointmentAsync which moves the appointment by N days.
-            await EditAppointmentAsync(_currentPatient.LastName, numberOfDays);
+            // Get appointment count BEFORE change (matching legacy behavior)
+            int totalAppts = await GetPatientAppointmentsCountAsync();
+            Log.Information($"Appointment count before date change: {totalAppts}");
+
+            // Click first appointment in list (matching legacy appointments[0].Click())
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime ?? "");
+            var firstAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 15);
+            await Driver.ClickAsync(firstAppointment);
+
+            // Edit appointment
+            await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+
+            // Calculate new date using stored appointmentDate (matching legacy)
+            string newAppointmentDateString = _appointmentDate.AddDays(numberOfDays).ToString("M/d/yyyy");
+            await Driver.ClickAsync(DatePickerInput.Id());
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), newAppointmentDateString);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+            // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
+            await WaitForAppointmentGridToLoadAsync();
+
+            // Get appointment count AFTER change and verify it dropped by 1
+            int currentApptCount = await GetPatientAppointmentsCountAsync();
+            Log.Information($"Appointment count after date change: {currentApptCount}");
+
+            if (currentApptCount != totalAppts - 1)
+            {
+                Log.Error($"Appointment count did not drop after moving an appointment to {numberOfDays} days. Expected: {totalAppts - 1}, Actual: {currentApptCount}");
+            }
+
             return this;
         }
 
@@ -697,7 +760,48 @@ namespace VaxCare.Pages.Portal
                 return this;
             }
 
-            await DeletePatientVisitAsync(_currentPatient.LastName);
+            try
+            {
+                // Get appointment count BEFORE deletion (matching legacy behavior)
+                var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {_currentPatient.LastName}, ");
+                var patientsTotalAppts = await Driver.FindAllElementsAsync(
+                    By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                    By.XPath(patientAppointmentXpath),
+                    10);
+                int totalAppts = patientsTotalAppts.Count;
+                Log.Information($"Appointment count before deletion: {totalAppts}");
+
+                // Click on patient appointment and delete (matching legacy ClickEditDelete behavior)
+                await Driver.ClickAsync(patientAppointmentXpath.XPath());
+                await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                await Driver.ClickAsync(DeleteButton.Id(), 3);
+                await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath());
+                await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+                // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
+                await WaitForAppointmentGridToLoadAsync();
+
+                // Get appointment count AFTER deletion (using GetPatientNameOnSchedule equivalent)
+                var patientNameOnSchedule = $" {_currentPatient.LastName}, {_currentPatient.FirstName} ";
+                var patientsCurrentAppts = await Driver.FindAllElementsAsync(
+                    By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                    By.XPath(string.Format(PatientAppointmentOnSchedulerXpath, patientNameOnSchedule)),
+                    10);
+                int currentApptCount = patientsCurrentAppts.Count;
+                Log.Information($"Appointment count after deletion: {currentApptCount}");
+
+                // Verify count dropped by 1 (matching legacy behavior)
+                if (currentApptCount != totalAppts - 1)
+                {
+                    Log.Error($"The appointment row count did not decrease. Expected: {totalAppts - 1}, Actual: {currentApptCount}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "The patient wasn't deleted. The patient shouldn't be seen after deleting.");
+                throw;
+            }
+
             return this;
         }
 
@@ -717,15 +821,15 @@ namespace VaxCare.Pages.Portal
             var patientRowXpath = string.Format(PatientRowWithLastNameXpath, _currentPatient.LastName);
             var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
             
-            // Extract appointment time from the row
+            // Extract appointment time from the row and store it (matching legacy AppointmentTime field)
             var appointmentTimeSpan = patientRow.FindElement(By.XPath(AppointmentTimeSpanXpath));
-            var appointmentTime = " " + appointmentTimeSpan.Text.Trim() + " ";
+            _appointmentTime = " " + appointmentTimeSpan.Text.Trim() + " ";
             
             // Format XPath matching legacy: PatientWithApptTimeAndNameXpath with patient last name and appointment time
-            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", appointmentTime);
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
             
             // Wait for element to appear (matching legacy WaitForElementToAppear)
-            Log.Step($"{patientNameOnSchedule} scheduled for {appointmentTime}");
+            Log.Step($"{patientNameOnSchedule} scheduled for {_appointmentTime}");
             await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
 
             if (shouldClick)
