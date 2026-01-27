@@ -58,11 +58,11 @@ namespace VaxCare.Pages.CommunityEvents
         public async Task<CommunityEventsRegistrationPage> NavigateToAsync(string url)
         {
             Log.Step($"Navigate to Community Events registration page: {url}");
-            await Driver.NavigateAsync(url, Log);
+            await Driver.NavigateAsync(url);
             
             // Wait for page to load by waiting for a key element (enrollment code input)
             // This ensures the page is fully rendered before proceeding, preventing blank screenshots
-            await Driver.WaitUntilElementLoadsAsync(EnrollmentCodeInput.Id(), Log, timeoutInSeconds: 15);
+            await Driver.WaitUntilElementLoadsAsync(EnrollmentCodeInput.Id(), timeoutInSeconds: 15);
             
             return this;
         }
@@ -71,11 +71,11 @@ namespace VaxCare.Pages.CommunityEvents
         {
             Log.Step("Verify Event Registration Home Page UI elements");
             
-            await Driver.WaitUntilElementLoadsAsync(VaxCareLogo.XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync(EventRegistrationTitle.XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync(GetStartedHeader.XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync(EnrollmentCodeLabel.XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync($"{EnrollmentCodeInput}".Id(), Log);
+            await Driver.WaitUntilElementLoadsAsync(VaxCareLogo.XPath());
+            await Driver.WaitUntilElementLoadsAsync(EventRegistrationTitle.XPath());
+            await Driver.WaitUntilElementLoadsAsync(GetStartedHeader.XPath());
+            await Driver.WaitUntilElementLoadsAsync(EnrollmentCodeLabel.XPath());
+            await Driver.WaitUntilElementLoadsAsync($"{EnrollmentCodeInput}".Id());
             
             return this;
         }
@@ -83,14 +83,14 @@ namespace VaxCare.Pages.CommunityEvents
         public async Task<CommunityEventsRegistrationPage> EnterEnrollmentCodeAsync(string enrollmentCode)
         {
             Log.Step($"Enter enrollment code: {enrollmentCode}");
-            await Driver.SendKeysAsync(EnrollmentCodeInput.Id(), enrollmentCode, Log);
+            await Driver.SendKeysAsync(EnrollmentCodeInput.Id(), enrollmentCode);
             return this;
         }
 
         public async Task<CommunityEventsRegistrationPage> ClickBeginRegistrationButtonAsync()
         {
             Log.Step("Click Begin Registration button");
-            await Driver.ClickAsync(BeginRegistrationButton.XPath(), Log);
+            await Driver.ClickAsync(BeginRegistrationButton.XPath());
             return this;
         }
 
@@ -101,8 +101,8 @@ namespace VaxCare.Pages.CommunityEvents
             await ClickBeginRegistrationButtonAsync();
             
             // Verify location dropdown appears
-            await Driver.WaitUntilElementLoadsAsync("//label[text()='Location']/following-sibling::select[not(@aria-describedby)]/option[text()='   -- Select --   ']".XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync(ContinueButton.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync("//label[text()='Location']/following-sibling::select[not(@aria-describedby)]/option[text()='   -- Select --   ']".XPath());
+            await Driver.WaitUntilElementLoadsAsync(ContinueButton.XPath());
             
             return this;
         }
@@ -110,14 +110,14 @@ namespace VaxCare.Pages.CommunityEvents
         public async Task<CommunityEventsRegistrationPage> SelectClinicAsync(string clinicLocation)
         {
             Log.Step($"Select clinic location: {clinicLocation}");
-            await Driver.SelectDropDownOptionByTextAsync(ClinicDropdown.Id(), clinicLocation, Log);
+            await Driver.SelectDropDownOptionByTextAsync(ClinicDropdown.Id(), clinicLocation);
             return this;
         }
 
         public async Task<CommunityEventsRegistrationPage> ClickContinueButtonAsync()
         {
             Log.Step("Click Continue button");
-            await Driver.ClickAsync(ContinueButton.XPath(), Log);
+            await Driver.ClickAsync(ContinueButton.XPath());
             return this;
         }
 
@@ -128,7 +128,7 @@ namespace VaxCare.Pages.CommunityEvents
             await ClickContinueButtonAsync();
             
             // Wait for registration page to load
-            await Driver.WaitUntilElementLoadsAsync("//div[@class='enrollment-header' and text()='Event Registration']".XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync("//div[@class='enrollment-header' and text()='Event Registration']".XPath());
             
             return this;
         }
@@ -146,19 +146,19 @@ namespace VaxCare.Pages.CommunityEvents
             Log.Step($"Enter patient registration information: {firstName} {lastName}, Insurance: {(string.IsNullOrEmpty(insurance) ? "None" : insurance)}");
             
             // Basic Information
-            await Driver.SendKeysAsync(FirstNameInput.Id(), firstName, Log);
-            await Driver.SendKeysAsync(LastNameInput.Id(), lastName, Log);
-            await Driver.SendKeysAsync(DobInput.Id(), "09/28/2018", Log);
-            await Driver.SelectDropDownOptionByTextAsync(GenderDropdown.Id(), "Female", Log);
-            await Driver.SelectDropDownOptionByTextAsync(EthnicityDropdown.Id(), "Unspecified", Log);
-            await Driver.SelectDropDownOptionByTextAsync(RaceDropdown.Id(), "Unspecified", Log);
+            await Driver.SendKeysAsync(FirstNameInput.Id(), firstName);
+            await Driver.SendKeysAsync(LastNameInput.Id(), lastName);
+            await Driver.SendKeysAsync(DobInput.Id(), "09/28/2018");
+            await Driver.SelectDropDownOptionByTextAsync(GenderDropdown.Id(), "Female");
+            await Driver.SelectDropDownOptionByTextAsync(EthnicityDropdown.Id(), "Unspecified");
+            await Driver.SelectDropDownOptionByTextAsync(RaceDropdown.Id(), "Unspecified");
             
             // Contact Information
-            await Driver.SendKeysAsync(Address1Input.Id(), "5 MY STREET", Log);
-            await Driver.SendKeysAsync(CityInput.Id(), "ORLANDO", Log);
-            await Driver.SelectDropDownOptionByTextAsync(StateDropdown.Id(), "Florida", Log);
-            await Driver.SendKeysAsync(ZipCodeInput.Id(), "32806", Log);
-            await Driver.SendKeysAsync(PhoneInput.Id(), "382-103-9728", Log);
+            await Driver.SendKeysAsync(Address1Input.Id(), "5 MY STREET");
+            await Driver.SendKeysAsync(CityInput.Id(), "ORLANDO");
+            await Driver.SelectDropDownOptionByTextAsync(StateDropdown.Id(), "Florida");
+            await Driver.SendKeysAsync(ZipCodeInput.Id(), "32806");
+            await Driver.SendKeysAsync(PhoneInput.Id(), "382-103-9728");
             
             // Insurance Information
             if (string.IsNullOrEmpty(insurance))
@@ -169,43 +169,43 @@ namespace VaxCare.Pages.CommunityEvents
                 var hiddenPrimaryInsuranceInput = "//input[@name='Insurance.PrimaryInsuranceId_input' and @disabled]";
                 
                 // Click uninsured checkbox
-                await Driver.ClickAsync(UninsuredCheckbox.XPath(), Log);
+                await Driver.ClickAsync(UninsuredCheckbox.XPath());
                 await Task.Delay(2000); // Wait for UI to update
                 
                 // Verify insurance fields are now hidden
-                await Driver.WaitUntilElementLoadsAsync(hiddenInsuranceContainer.XPath(), Log);
-                await Driver.WaitUntilElementLoadsAsync(hiddenPrimaryInsuranceInput.XPath(), Log);
+                await Driver.WaitUntilElementLoadsAsync(hiddenInsuranceContainer.XPath());
+                await Driver.WaitUntilElementLoadsAsync(hiddenPrimaryInsuranceInput.XPath());
             }
             else
             {
                 Log.Step($"Enter insurance information: {insurance}");
-                await Driver.SendKeysAsync(PrimaryInsuranceInput.Name(), insurance, Log);
-                await Driver.SendKeysAsync(MemberIdInput.Id(), "10742845GBHZ", Log);
-                await Driver.SelectDropDownOptionByTextAsync(RelationshipToInsuredDropdown.Id(), "Self", Log);
+                await Driver.SendKeysAsync(PrimaryInsuranceInput.Name(), insurance);
+                await Driver.SendKeysAsync(MemberIdInput.Id(), "10742845GBHZ");
+                await Driver.SelectDropDownOptionByTextAsync(RelationshipToInsuredDropdown.Id(), "Self");
             }
             
             // Authorization and Consent
             Log.Step("Fill out authorization and consent questions");
-            await Driver.ClickAsync("//label[@for='Authorization_PatientIsSick_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HasAllergy_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HadVaccineReaction_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HasHealthProblems_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_Immunocompromised_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HadCancerTreatments_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HasHadNeurologicalDisease_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_DoesSmoke_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HasHadBloodTreatment_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_IsPregnant_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HadRecentVaccinations_N']".XPath(), Log);
-            await Driver.ClickAsync("//label[@for='Authorization_HadInfluenzaVaccination_N']".XPath(), Log);
-            await Driver.ClickAsync(AuthorizationConsentCheckbox.Id(), Log);
+            await Driver.ClickAsync("//label[@for='Authorization_PatientIsSick_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HasAllergy_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HadVaccineReaction_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HasHealthProblems_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_Immunocompromised_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HadCancerTreatments_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HasHadNeurologicalDisease_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_DoesSmoke_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HasHadBloodTreatment_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_IsPregnant_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HadRecentVaccinations_N']".XPath());
+            await Driver.ClickAsync("//label[@for='Authorization_HadInfluenzaVaccination_N']".XPath());
+            await Driver.ClickAsync(AuthorizationConsentCheckbox.Id());
             
             // Signature
-            await Driver.SendKeysAsync(AuthorizationSignatureInput.Id(), "Test Patient", Log);
+            await Driver.SendKeysAsync(AuthorizationSignatureInput.Id(), "Test Patient");
             
             // Submit Registration
             Log.Step("Submit registration form");
-            await Driver.ClickAsync(FormSubmitButton.XPath(), Log);
+            await Driver.ClickAsync(FormSubmitButton.XPath());
             
             return this;
         }
@@ -215,10 +215,10 @@ namespace VaxCare.Pages.CommunityEvents
             Log.Step("Verify incomplete field warning is displayed");
             
             // Verify warning message
-            await Driver.WaitUntilElementLoadsAsync(IncompleteFieldWarning.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(IncompleteFieldWarning.XPath());
             
             // Verify first name field has validation error
-            await Driver.WaitUntilElementLoadsAsync("//input[@id='firstName']/parent::div[contains(@class,'input-validation-error')]".XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync("//input[@id='firstName']/parent::div[contains(@class,'input-validation-error')]".XPath());
             
             return this;
         }
@@ -228,16 +228,16 @@ namespace VaxCare.Pages.CommunityEvents
             Log.Step($"Click {buttonText} button on success dialog");
             
             // Wait for success modal
-            await Driver.WaitUntilElementLoadsAsync(SuccessModalTitle.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync(SuccessModalTitle.XPath());
             
             // Verify modal elements
-            await Driver.WaitUntilElementLoadsAsync("//div[@class='modal-body']/div[text()='Save or print a copy of this form for your records.']".XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync(SuccessModalSavePrintButton.XPath(), Log);
-            await Driver.WaitUntilElementLoadsAsync(SuccessModalExitButton.XPath(), Log);
+            await Driver.WaitUntilElementLoadsAsync("//div[@class='modal-body']/div[text()='Save or print a copy of this form for your records.']".XPath());
+            await Driver.WaitUntilElementLoadsAsync(SuccessModalSavePrintButton.XPath());
+            await Driver.WaitUntilElementLoadsAsync(SuccessModalExitButton.XPath());
             
             // Click the specified button
             var buttonSelector = $"//button[text()='{buttonText}']";
-            await Driver.ClickAsync(buttonSelector.XPath(), Log);
+            await Driver.ClickAsync(buttonSelector.XPath());
             
             return this;
         }
@@ -245,13 +245,13 @@ namespace VaxCare.Pages.CommunityEvents
         public async Task<bool> VerifyInvalidCodeWarningAsync()
         {
             Log.Step("Verify invalid code warning is displayed");
-            return await Driver.IsElementPresentAsync(InvalidCodeWarning.XPath(), Log);
+            return await Driver.IsElementPresentAsync(InvalidCodeWarning.XPath());
         }
 
         public async Task<bool> VerifyNoClinicWarningAsync()
         {
             Log.Step("Verify no clinic selected warning is displayed");
-            return await Driver.IsElementPresentAsync(NoClinicWarning.XPath(), Log);
+            return await Driver.IsElementPresentAsync(NoClinicWarning.XPath());
         }
 
         public string DetermineCorrectEnvironmentPortalUrl()

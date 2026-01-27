@@ -21,12 +21,12 @@ namespace VaxCare.Pages.Login
         public async Task<InternalInventoryManagementPage> LoginAsync(string url)
         {
             Log.Step("Login to Internal Inventory Management.");
-            await Driver.NavigateAsync(url, Log);
-            await Driver.SendKeysAsync(UserNameFieldId.Id(), UserName, Log);
-            await Driver.ClickAsync(NextButtonId.Id(), Log);
-            await Driver.SendKeysAsync(PasswordFieldId.Id(), Password, Log, true);
-            await Driver.ClickAsync(OktaVerifyButton.XPath(), Log);
-            await Driver.ClickAsync(DoNotStaySignedIn.Id(), Log);
+            await Driver.NavigateAsync(url);
+            await Driver.SendKeysAsync(UserNameFieldId.Id(), UserName);
+            await Driver.ClickAsync(NextButtonId.Id());
+            await Driver.SendKeysAsync(PasswordFieldId.Id(), Password, true);
+            await Driver.ClickAsync(OktaVerifyButton.XPath());
+            await Driver.ClickAsync(DoNotStaySignedIn.Id());
             return await GoToAsync(async _ => new InternalInventoryManagementPage(Driver, Log));
         }
     }

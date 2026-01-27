@@ -40,7 +40,7 @@ namespace VaxCare.Pages.DataEntry
 
         public override async Task InitAsync(object[] args)
         {
-            await Driver.WaitUntilElementLoadsAsync(By.Id(HomePageLogoId), Log);
+            await Driver.WaitUntilElementLoadsAsync(By.Id(HomePageLogoId));
         }
 
         #region Navigation Methods
@@ -48,14 +48,14 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickHomeLink()
         {
             Log.Step("Click Home link.");
-            await Driver.ClickAsync(HomeLink.Id(), Log);
+            await Driver.ClickAsync(HomeLink.Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> ClickBatchProcessingLink()
         {
             Log.Step("Click Batch Processing link.");
-            await Driver.ClickAsync(BatchProcessingLink.Id(), Log);
+            await Driver.ClickAsync(BatchProcessingLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -63,7 +63,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickDataEntryLink()
         {
             Log.Step("Click Data Entry link.");
-            await Driver.ClickAsync(DataEntryLink.Id(), Log);
+            await Driver.ClickAsync(DataEntryLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -71,7 +71,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickDataEntryNoBatchLink()
         {
             Log.Step("Click Data Entry No Batch link.");
-            await Driver.ClickAsync(DataEntryNoBatchLink.Id(), Log);
+            await Driver.ClickAsync(DataEntryNoBatchLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -79,7 +79,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickPatientSearchLink()
         {
             Log.Step("Click Patient Search link.");
-            await Driver.ClickAsync(PatientSearchLink.Id(), Log);
+            await Driver.ClickAsync(PatientSearchLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -87,7 +87,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickConsentFormBatchEditLink()
         {
             Log.Step("Click Consent Form Batch Edit link.");
-            await Driver.ClickAsync(ConsentFormBatchEditLink.Id(), Log);
+            await Driver.ClickAsync(ConsentFormBatchEditLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -95,7 +95,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickLotNumberAdminToolLink()
         {
             Log.Step("Click Lot Number Admin Tool link.");
-            await Driver.ClickAsync(LotNumberAdminToolLink.Id(), Log);
+            await Driver.ClickAsync(LotNumberAdminToolLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -103,7 +103,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickRcmPowerToolsLink()
         {
             Log.Step("Click RCM Power Tools link.");
-            await Driver.ClickAsync(RcmPowerToolsLink.Id(), Log);
+            await Driver.ClickAsync(RcmPowerToolsLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -111,7 +111,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickFinancialReconciliationLink()
         {
             Log.Step("Click Financial Reconciliation link.");
-            await Driver.ClickAsync(FinancialReconciliationLink.Id(), Log);
+            await Driver.ClickAsync(FinancialReconciliationLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -119,7 +119,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickTransactionReportLink()
         {
             Log.Step("Click Transaction Report link.");
-            await Driver.ClickAsync(TransactionReportLink.Id(), Log);
+            await Driver.ClickAsync(TransactionReportLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -127,7 +127,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickInventoryTransactionHistoryLink()
         {
             Log.Step("Click Inventory Transaction History link.");
-            await Driver.ClickAsync(InventoryTransactionHistoryLink.Id(), Log);
+            await Driver.ClickAsync(InventoryTransactionHistoryLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -135,7 +135,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickPartnerHealthReportLink()
         {
             Log.Step("Click Partner Health Report link.");
-            await Driver.ClickAsync(PartnerHealthReportLink.Id(), Log);
+            await Driver.ClickAsync(PartnerHealthReportLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -143,7 +143,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickVaccineCountManagerLink()
         {
             Log.Step("Click Vaccine Count Manager link.");
-            await Driver.ClickAsync(VaccineCountManagerLink.Id(), Log);
+            await Driver.ClickAsync(VaccineCountManagerLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -151,7 +151,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickIntegrationsLink()
         {
             Log.Step("Click Integrations link.");
-            await Driver.ClickAsync(IntegrationsLink.Id(), Log);
+            await Driver.ClickAsync(IntegrationsLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -159,7 +159,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickPayspanFileGenerationLink()
         {
             Log.Step("Click Payspan File Generation link.");
-            await Driver.ClickAsync(PayspanFileGenerationLink.Id(), Log);
+            await Driver.ClickAsync(PayspanFileGenerationLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -167,7 +167,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickDataUploadToolLink()
         {
             Log.Step("Click Data Upload Tool link.");
-            await Driver.ClickAsync(DataUploadToolLink.Id(), Log);
+            await Driver.ClickAsync(DataUploadToolLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -175,7 +175,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickDevOpsToolsLink()
         {
             Log.Step("Click DevOps Tools link.");
-            await Driver.ClickAsync(DevOpsToolsLink.Id(), Log);
+            await Driver.ClickAsync(DevOpsToolsLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -183,7 +183,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickInReviewReportLink()
         {
             Log.Step("Click In Review Report link.");
-            await Driver.ClickAsync(InReviewReportLink.Id(), Log);
+            await Driver.ClickAsync(InReviewReportLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -191,7 +191,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickMonthlyCompFinalizationLink()
         {
             Log.Step("Click Monthly Comp Finalization link.");
-            await Driver.ClickAsync(MonthlyCompFinalizationLink.Id(), Log);
+            await Driver.ClickAsync(MonthlyCompFinalizationLink.Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -203,8 +203,8 @@ namespace VaxCare.Pages.DataEntry
             Uri uri = new Uri(baseUrl);
             string hostUrl = uri.Host.ToString();
             string fullUrl = string.Format("https://{0}/InsuranceMapping/index", hostUrl);
-            await Driver.NavigateAsync(fullUrl, Log);
-            await Driver.WaitUntilElementLoadsAsync(By.Id("lnkConsentBatchIndex"), Log);
+            await Driver.NavigateAsync(fullUrl);
+            await Driver.WaitUntilElementLoadsAsync(By.Id("lnkConsentBatchIndex"));
             return this;
         }
 
@@ -214,9 +214,9 @@ namespace VaxCare.Pages.DataEntry
             const string DropdownState = "//*[@id=\"MappingFallouts\"]/div[1]/table/tr[2]/td[2]/select";
             const string InputFilterInsuranceName = "//*[@id=\"MappingFallouts\"]/div[1]/table/tr[2]/td[1]/input";
             const string TableSelectInsuranceToMap = "//*[@id=\"MappingFallouts\"]/div[2]/table/tbody/tr[1]/td[1]";
-            await Driver.SelectDropDownOptionByValueAsync(DropdownState.XPath(), "FL", Log);
-            await Driver.SendKeysAsync(InputFilterInsuranceName.XPath(), "Blue Cross/" + Keys.Return, Log);
-            await Driver.ClickAsync(TableSelectInsuranceToMap.XPath(), Log);
+            await Driver.SelectDropDownOptionByValueAsync(DropdownState.XPath(), "FL");
+            await Driver.SendKeysAsync(InputFilterInsuranceName.XPath(), "Blue Cross/" + Keys.Return);
+            await Driver.ClickAsync(TableSelectInsuranceToMap.XPath());
             return this;
         }
 
@@ -225,8 +225,8 @@ namespace VaxCare.Pages.DataEntry
             Log.Step("Select Insurance Payer.");
             const string InputFilterInsuranceName2 = "//*[@id=\"Insurances\"]/div[1]/table/tr[2]/td[2]/input";
             const string TableSelectInsurancePayerName = "//*[@id=\"Insurances\"]/div[2]/table/tbody/tr/td[2]";
-            await Driver.SendKeysAsync(InputFilterInsuranceName2.XPath(), "Acordia" + Keys.Return, Log);
-            await Driver.ClickAsync(TableSelectInsurancePayerName.XPath(), Log);
+            await Driver.SendKeysAsync(InputFilterInsuranceName2.XPath(), "Acordia" + Keys.Return);
+            await Driver.ClickAsync(TableSelectInsurancePayerName.XPath());
             return this;
         }
 
@@ -234,7 +234,7 @@ namespace VaxCare.Pages.DataEntry
         {
             Log.Step("Select Insurance Plan Id.");
             const string TableSelectInsuranceMapping = "//*[@id=\"MappingFilters\"]/div[2]/table/tbody/tr[4]";
-            await Driver.ClickAsync(TableSelectInsuranceMapping.XPath(), Log);
+            await Driver.ClickAsync(TableSelectInsuranceMapping.XPath());
             return this;
         }
 
@@ -249,14 +249,14 @@ namespace VaxCare.Pages.DataEntry
             const string InsurancePayerId = "1000023014";
             const string PayerTypeId = "4";
 
-            var insuranceToMapName = await Driver.GetTextAsync(TableSelectInsuranceToMap.XPath(), Log);
-            var insuranceToMapInsuranceId = await Driver.GetTextAsync(TableSelectInsuranceToMapInsuranceId.XPath(), Log);
-            var insuranceToMapMappingFilterId = await Driver.GetTextAsync(TableSelectInsuranceToMapMappingFilterId.XPath(), Log);
+            var insuranceToMapName = await Driver.GetTextAsync(TableSelectInsuranceToMap.XPath());
+            var insuranceToMapInsuranceId = await Driver.GetTextAsync(TableSelectInsuranceToMapInsuranceId.XPath());
+            var insuranceToMapMappingFilterId = await Driver.GetTextAsync(TableSelectInsuranceToMapMappingFilterId.XPath());
 
             var verified = insuranceToMapName == InsuranceToMapName && insuranceToMapInsuranceId == InsurancePayerId && insuranceToMapMappingFilterId == PayerTypeId;
             if (verified)
             {
-                await Driver.ClickAsync(ButtonUploadToDB.Id(), Log);
+                await Driver.ClickAsync(ButtonUploadToDB.Id());
                 await Driver.WaitForAlertAndDismissAsync();
             }
             else
@@ -273,7 +273,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickTheAddBatchButton()
         {
             Log.Step("Click the Add Batch button.");
-            await Driver.ClickAsync("addBatchButton".Id(), Log);
+            await Driver.ClickAsync("addBatchButton".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -281,14 +281,14 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> EnterValueIntoBatchRecId(int batchRecId)
         {
             Log.Step($"Enter batch Rec ID: {batchRecId}.");
-            await Driver.SendKeysAsync("batchRecId".Id(), batchRecId.ToString(), Log);
+            await Driver.SendKeysAsync("batchRecId".Id(), batchRecId.ToString());
             return this;
         }
 
         public async Task<DataEntryHomePage> SaveBatchRegistration()
         {
             Log.Step("Save batch registration.");
-            await Driver.ClickAsync("saveBatchButton".Id(), Log);
+            await Driver.ClickAsync("saveBatchButton".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -296,7 +296,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ExpandBatchReconciliationSectionAndVerifyItLoads()
         {
             Log.Step("Expand Batch Reconciliation section and verify it loads.");
-            await Driver.ClickAsync("batchReconciliationSection".Id(), Log);
+            await Driver.ClickAsync("batchReconciliationSection".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -304,7 +304,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ExpandScanningAndVerificationSectionAndVerifyItLoads()
         {
             Log.Step("Expand Scanning and Verification section and verify it loads.");
-            await Driver.ClickAsync("scanningVerificationSection".Id(), Log);
+            await Driver.ClickAsync("scanningVerificationSection".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -312,7 +312,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickSaveAndFindAnotherButton()
         {
             Log.Step("Click Save and Find Another button.");
-            await Driver.ClickAsync("saveAndFindAnotherButton".Id(), Log);
+            await Driver.ClickAsync("saveAndFindAnotherButton".Id());
             return this;
         }
 
@@ -326,8 +326,8 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> SearchForBatch(string searchTerm)
         {
             Log.Step($"Search for batch: {searchTerm}.");
-            await Driver.SendKeysAsync("batchSearchInput".Id(), searchTerm, Log);
-            await Driver.ClickAsync("batchSearchButton".Id(), Log);
+            await Driver.SendKeysAsync("batchSearchInput".Id(), searchTerm);
+            await Driver.ClickAsync("batchSearchButton".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -339,7 +339,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> CreateNewConsentForm()
         {
             Log.Step("Create new consent form.");
-            await Driver.ClickAsync("newConsentFormButton".Id(), Log);
+            await Driver.ClickAsync("newConsentFormButton".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -363,9 +363,9 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> AddVaccinationAndSave()
         {
             Log.Step("Add vaccination and save.");
-            await Driver.ClickAsync("addVaccinationButton".Id(), Log);
+            await Driver.ClickAsync("addVaccinationButton".Id());
             // Fill vaccination details
-            await Driver.ClickAsync("saveConsentFormButton".Id(), Log);
+            await Driver.ClickAsync("saveConsentFormButton".Id());
             await Driver.WaitForAlertAndDismissAsync();
             return this;
         }
@@ -373,7 +373,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> NavigateToDataEntryPage()
         {
             Log.Step("Navigate to Data Entry page.");
-            await Driver.ClickAsync("dataEntryPageLink".Id(), Log);
+            await Driver.ClickAsync("dataEntryPageLink".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -389,7 +389,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ClickViewLinkForFirstRow()
         {
             Log.Step("Click view link for first row.");
-            await Driver.ClickAsync("firstRowViewLink".Id(), Log);
+            await Driver.ClickAsync("firstRowViewLink".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -397,7 +397,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> VerifyConsentIdFieldIsPresent()
         {
             Log.Step("Verify consent ID field is present.");
-            var isPresent = await Driver.IsElementPresentAsync("consentIdField".Id(), Log);
+            var isPresent = await Driver.IsElementPresentAsync("consentIdField".Id());
             if (!isPresent)
                 throw new Exception("Consent ID field is not present.");
             return this;
@@ -406,9 +406,9 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> SelectPartnerAndClinicDataEntryNoBatch()
         {
             Log.Step("Select partner and clinic for Data Entry No Batch.");
-            await Driver.SelectDropDownOptionByValueAsync("partnerDropdown".Id(), "1", Log); // Placeholder
-            await Driver.SelectDropDownOptionByValueAsync("clinicDropdown".Id(), "1", Log); // Placeholder
-            await Driver.ClickAsync("selectPartnerClinicButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("partnerDropdown".Id(), "1"); // Placeholder
+            await Driver.SelectDropDownOptionByValueAsync("clinicDropdown".Id(), "1"); // Placeholder
+            await Driver.ClickAsync("selectPartnerClinicButton".Id());
             return this;
         }
 
@@ -419,8 +419,8 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> SearchFor(string searchTerm)
         {
             Log.Step($"Search for: {searchTerm}.");
-            await Driver.SendKeysAsync("patientSearchInput".Id(), searchTerm, Log);
-            await Driver.ClickAsync("patientSearchButton".Id(), Log);
+            await Driver.SendKeysAsync("patientSearchInput".Id(), searchTerm);
+            await Driver.ClickAsync("patientSearchButton".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -428,16 +428,16 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> AddNote()
         {
             Log.Step("Add note.");
-            await Driver.ClickAsync("addNoteButton".Id(), Log);
-            await Driver.SendKeysAsync("noteTextArea".Id(), "Test note", Log);
-            await Driver.ClickAsync("saveNoteButton".Id(), Log);
+            await Driver.ClickAsync("addNoteButton".Id());
+            await Driver.SendKeysAsync("noteTextArea".Id(), "Test note");
+            await Driver.ClickAsync("saveNoteButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> VerifyNoteWasAdded()
         {
             Log.Step("Verify note was added.");
-            var isPresent = await Driver.IsTextPresentAsync("notesList".Id(), "Test note", Log);
+            var isPresent = await Driver.IsTextPresentAsync("notesList".Id(), "Test note");
             if (!isPresent)
                 throw new Exception("Note was not added.");
             return this;
@@ -446,7 +446,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> CreateNewTransaction()
         {
             Log.Step("Create new transaction.");
-            await Driver.ClickAsync("newTransactionButton".Id(), Log);
+            await Driver.ClickAsync("newTransactionButton".Id());
             // TODO: Add WaitUntilElementLoadsAsync with actual selector once identified
             return this;
         }
@@ -454,15 +454,15 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> EditOtherInsuranceNameAndSave()
         {
             Log.Step("Edit other insurance name and save.");
-            await Driver.SendKeysAsync("otherInsuranceNameInput".Id(), "Updated Insurance Name", Log);
-            await Driver.ClickAsync("saveInsuranceButton".Id(), Log);
+            await Driver.SendKeysAsync("otherInsuranceNameInput".Id(), "Updated Insurance Name");
+            await Driver.ClickAsync("saveInsuranceButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> ExitTheConsentFormPage()
         {
             Log.Step("Exit the consent form page.");
-            await Driver.ClickAsync("exitButton".Id(), Log);
+            await Driver.ClickAsync("exitButton".Id());
             return this;
         }
 
@@ -480,22 +480,22 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> EnterConsentFormsNumbers()
         {
             Log.Step("Enter consent forms numbers.");
-            await Driver.SendKeysAsync("consentFormsNumbersInput".Id(), "12345,12346", Log); // Placeholder
+            await Driver.SendKeysAsync("consentFormsNumbersInput".Id(), "12345,12346"); // Placeholder
             return this;
         }
 
         public async Task<DataEntryHomePage> EnterValuesForEligibilityIdAndNotes()
         {
             Log.Step("Enter values for eligibility ID and notes.");
-            await Driver.SendKeysAsync("eligibilityIdInput".Id(), "123", Log); // Placeholder
-            await Driver.SendKeysAsync("notesInput".Id(), "Test notes", Log); // Placeholder
+            await Driver.SendKeysAsync("eligibilityIdInput".Id(), "123"); // Placeholder
+            await Driver.SendKeysAsync("notesInput".Id(), "Test notes"); // Placeholder
             return this;
         }
 
         public async Task<DataEntryHomePage> SaveThePage()
         {
             Log.Step("Save the page.");
-            await Driver.ClickAsync("saveBatchEditButton".Id(), Log);
+            await Driver.ClickAsync("saveBatchEditButton".Id());
             return this;
         }
 
@@ -516,7 +516,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> VerifyNoteIsCorrect()
         {
             Log.Step("Verify note is correct.");
-            var isPresent = await Driver.IsTextPresentAsync("notesDisplay".Id(), "Test notes", Log);
+            var isPresent = await Driver.IsTextPresentAsync("notesDisplay".Id(), "Test notes");
             if (!isPresent)
                 throw new Exception("Note is not correct.");
             return this;
@@ -525,7 +525,7 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> ResetPageAndVerifyFieldsAreCleared()
         {
             Log.Step("Reset page and verify fields are cleared.");
-            await Driver.ClickAsync("resetButton".Id(), Log);
+            await Driver.ClickAsync("resetButton".Id());
             // Add verification logic
             return this;
         }
@@ -533,80 +533,80 @@ namespace VaxCare.Pages.DataEntry
         public async Task<DataEntryHomePage> TestPartnerBillPaymentMode()
         {
             Log.Step("Test Partner Bill payment mode.");
-            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "PartnerBill", Log);
-            await Driver.ClickAsync("applyPaymentModeButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "PartnerBill");
+            await Driver.ClickAsync("applyPaymentModeButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestInsurancePayPaymentMode()
         {
             Log.Step("Test Insurance Pay payment mode.");
-            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "InsurancePay", Log);
-            await Driver.ClickAsync("applyPaymentModeButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "InsurancePay");
+            await Driver.ClickAsync("applyPaymentModeButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestSelfPayPaymentMode()
         {
             Log.Step("Test Self Pay payment mode.");
-            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "SelfPay", Log);
-            await Driver.ClickAsync("applyPaymentModeButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "SelfPay");
+            await Driver.ClickAsync("applyPaymentModeButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestEmployerPayPaymentMode()
         {
             Log.Step("Test Employer Pay payment mode.");
-            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "EmployerPay", Log);
-            await Driver.ClickAsync("applyPaymentModeButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "EmployerPay");
+            await Driver.ClickAsync("applyPaymentModeButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestNoPayPaymentMode()
         {
             Log.Step("Test No Pay payment mode.");
-            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "NoPay", Log);
-            await Driver.ClickAsync("applyPaymentModeButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("paymentModeDropdown".Id(), "NoPay");
+            await Driver.ClickAsync("applyPaymentModeButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestUpdateClaimStatus()
         {
             Log.Step("Test update claim status.");
-            await Driver.SelectDropDownOptionByValueAsync("claimStatusDropdown".Id(), "Updated", Log);
-            await Driver.ClickAsync("applyClaimStatusButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("claimStatusDropdown".Id(), "Updated");
+            await Driver.ClickAsync("applyClaimStatusButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestUpdateInvalidStock()
         {
             Log.Step("Test update invalid stock.");
-            await Driver.SelectDropDownOptionByValueAsync("stockStatusDropdown".Id(), "Invalid", Log);
-            await Driver.ClickAsync("applyStockStatusButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("stockStatusDropdown".Id(), "Invalid");
+            await Driver.ClickAsync("applyStockStatusButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestUpdateValidStock()
         {
             Log.Step("Test update valid stock.");
-            await Driver.SelectDropDownOptionByValueAsync("stockStatusDropdown".Id(), "Valid", Log);
-            await Driver.ClickAsync("applyStockStatusButton".Id(), Log);
+            await Driver.SelectDropDownOptionByValueAsync("stockStatusDropdown".Id(), "Valid");
+            await Driver.ClickAsync("applyStockStatusButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestHoldCallsAndStatementsUpdate()
         {
             Log.Step("Test hold calls and statements update.");
-            await Driver.ClickAsync("holdCallsCheckbox".Id(), Log);
-            await Driver.ClickAsync("holdStatementsCheckbox".Id(), Log);
-            await Driver.ClickAsync("applyHoldButton".Id(), Log);
+            await Driver.ClickAsync("holdCallsCheckbox".Id());
+            await Driver.ClickAsync("holdStatementsCheckbox".Id());
+            await Driver.ClickAsync("applyHoldButton".Id());
             return this;
         }
 
         public async Task<DataEntryHomePage> TestClearExistingDenialActionCompleted()
         {
             Log.Step("Test clear existing denial action completed.");
-            await Driver.ClickAsync("clearDenialActionButton".Id(), Log);
+            await Driver.ClickAsync("clearDenialActionButton".Id());
             return this;
         }
 

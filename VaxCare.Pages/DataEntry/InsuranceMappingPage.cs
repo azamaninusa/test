@@ -26,7 +26,7 @@ namespace VaxCare.Pages.DataEntry
         // Test setup
         public override async Task InitAsync(object[] args)
         {
-            await Driver.WaitUntilElementLoadsAsync(By.Id(HomePageLogoId), Log);
+            await Driver.WaitUntilElementLoadsAsync(By.Id(HomePageLogoId));
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace VaxCare.Pages.DataEntry
             Uri uri = new Uri(baseUrl);
             string hostUrl = uri.Host.ToString();
             string fullUrl = string.Format("https://{0}/InsuranceMapping/index", hostUrl);
-            await Driver.NavigateAsync(fullUrl, Log);
+            await Driver.NavigateAsync(fullUrl);
             return this;
         }
 

@@ -216,30 +216,50 @@ namespace VaxCare.Core.WebDriver
             });
         }
 
-        /// <summary>
-        /// Selects a specific option in a drop-down.
-        /// </summary>
-        /// <returns></returns>
-        public static async Task SelectDropDownOptionByValueAsync(this IWebDriver driver, By by, string optionToSelect, int timeoutInSeconds = 10)
-        {
-            var dropdown = await driver.FindElementAsync(by, timeoutInSeconds);
-            var selectElement = new SelectElement(dropdown); // Unable to unit test due to this line.
-            selectElement.SelectByValue(optionToSelect);
-        }
+        /// <summary>
+        /// Selects a specific option in a drop-down by value.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task SelectDropDownOptionByValueAsync(this IWebDriver driver, By by, string optionToSelect, int timeoutInSeconds = 10)
+        {
+            var dropdown = await driver.FindElementAsync(by, timeoutInSeconds);
+            var selectElement = new SelectElement(dropdown); // Unable to unit test due to this line.
+            selectElement.SelectByValue(optionToSelect);
+        }
 
-        /// <summary>
-        /// Sends keys to an Element via a given Selector.
-        /// </summary>
-        /// <returns></returns>
-        public static async Task SendKeysAsync(this IWebDriver driver, By by, string text, int timeoutInSeconds = 10)
-        {
-            var element = await driver.FindElementAsync(by, timeoutInSeconds);
+        /// <summary>
+        /// Selects a specific option in a drop-down by text.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task SelectDropDownOptionByTextAsync(this IWebDriver driver, By by, string optionText, int timeoutInSeconds = 10)
+        {
+            var dropdown = await driver.FindElementAsync(by, timeoutInSeconds);
+            var selectElement = new SelectElement(dropdown);
+            selectElement.SelectByText(optionText);
+        }
 
-            if (!string.IsNullOrEmpty(element.Text))
-                element.Clear();
+        /// <summary>
+        /// Gets the CSS value of an element property.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task<string> GetCssValueAsync(this IWebDriver driver, IWebElement element, string propertyName)
+        {
+            return await Task.Run(() => element.GetCssValue(propertyName));
+        }
 
-            element.SendKeys(text);
-        }
+        /// <summary>
+        /// Sends keys to an Element via a given Selector.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task SendKeysAsync(this IWebDriver driver, By by, string text, int timeoutInSeconds = 10)
+        {
+            var element = await driver.FindElementAsync(by, timeoutInSeconds);
+
+            if (!string.IsNullOrEmpty(element.Text))
+                element.Clear();
+
+            element.SendKeys(text);
+        }
 
         /// <summary>
         /// Clicks an element using JavaScript execution. Useful when element is intercepted by another element.

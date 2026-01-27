@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core.WebDriver;
 
@@ -5,10 +6,10 @@ namespace VaxCare.Core
 {
     public abstract class BasePage
     {
-        protected IWebDriverActor Driver { get; }
+        protected IWebDriver Driver { get; }
         protected ILogger Log { get; }
 
-        protected BasePage(IWebDriverActor driver, ILogger logger)
+        protected BasePage(IWebDriver driver, ILogger logger)
         {
             Driver = driver;
             Log = logger;

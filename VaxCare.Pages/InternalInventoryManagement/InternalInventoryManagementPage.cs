@@ -32,7 +32,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickSidebarMenuHamburger()
         {
             Log.Step("Click sidebar menu hamburger.");
-            await Driver.ClickAsync(SidebarMenuHamburger.XPath(), Log);
+            await Driver.ClickAsync(SidebarMenuHamburger.XPath());
             await Task.Delay(500); // Small delay for menu to open
             return this;
         }
@@ -40,16 +40,16 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOnPendingOrdersTabAndSwitchToiFrameAndVerifyItLoaded()
         {
             Log.Step("Click on Pending Orders tab and verify it loaded.");
-            await Driver.ClickAsync(PendingOrdersTab.LinkText(), Log);
+            await Driver.ClickAsync(PendingOrdersTab.LinkText());
             await SwitchToiFrameAsync();
-            await Driver.WaitUntilElementLoadsAsync(PendingOrdersTableFirstCell.XPath(), Log, 30);
+            await Driver.WaitUntilElementLoadsAsync(PendingOrdersTableFirstCell.XPath(), 30);
             return this;
         }
 
         public async Task<InternalInventoryManagementPage> ClickOnBatchDistTabAndVerifyItLoaded()
         {
             Log.Step("Click on Batch Dist tab and verify it loaded.");
-            await Driver.ClickAsync(BatchDistTab.LinkText(), Log);
+            await Driver.ClickAsync(BatchDistTab.LinkText());
             await SwitchToiFrameAsync();
             await Task.Delay(1000); // Wait for page to load
             return this;
@@ -58,16 +58,16 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOnOrderBatchesTabAndVerifyItLoaded()
         {
             Log.Step("Click on Order Batches tab and verify it loaded.");
-            await Driver.ClickAsync(OrderBatchesTab.LinkText(), Log);
+            await Driver.ClickAsync(OrderBatchesTab.LinkText());
             await SwitchToiFrameAsync();
-            await Driver.WaitUntilElementLoadsAsync(OrderBatchesSearchInput.XPath(), Log, 30);
+            await Driver.WaitUntilElementLoadsAsync(OrderBatchesSearchInput.XPath(), 30);
             return this;
         }
 
         public async Task<InternalInventoryManagementPage> ClickOnOrderHistoryTabAndVerifyItLoaded()
         {
             Log.Step("Click on Order History tab and verify it loaded.");
-            await Driver.ClickAsync(OrderHistoryTab.LinkText(), Log);
+            await Driver.ClickAsync(OrderHistoryTab.LinkText());
             await SwitchToiFrameAsync();
             await Task.Delay(1000); // Wait for page to load
             return this;
@@ -76,7 +76,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOnRunProcessAndVerifyItLoaded()
         {
             Log.Step("Click on Run Process tab and verify it loaded.");
-            await Driver.ClickAsync(RunProcessTab.LinkText(), Log);
+            await Driver.ClickAsync(RunProcessTab.LinkText());
             await SwitchToiFrameAsync();
             await Task.Delay(1000); // Wait for page to load
             return this;
@@ -85,7 +85,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickNonSeasonalAutoOrder()
         {
             Log.Step("Click on Non-Seasonal Auto-Order Generation tab.");
-            await Driver.ClickAsync(NonSeasonalAutoOrderTab.LinkText(), Log);
+            await Driver.ClickAsync(NonSeasonalAutoOrderTab.LinkText());
             await Task.Delay(1000); // Wait for page to load
             return this;
         }
@@ -93,7 +93,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOrderabilityManagementAndVerifyItLoaded()
         {
             Log.Step("Click on Orderability Management tab and verify it loaded.");
-            await Driver.ClickAsync(OrderabilityManagementTab.LinkText(), Log);
+            await Driver.ClickAsync(OrderabilityManagementTab.LinkText());
             await Task.Delay(1000); // Wait for page to load
             return this;
         }
@@ -101,7 +101,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOrdersAndShipmentsAndVerifyItLoaded()
         {
             Log.Step("Click on Orders And Shipments tab and verify it loaded.");
-            await Driver.ClickAsync(OrdersAndShipmentsTab.LinkText(), Log);
+            await Driver.ClickAsync(OrdersAndShipmentsTab.LinkText());
             await Task.Delay(1000); // Wait for page to load
             return this;
         }
@@ -109,7 +109,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickAdjustmentsUploadAndVerifyItLoaded()
         {
             Log.Step("Click on Adjustments Upload tab and verify it loaded.");
-            await Driver.ClickAsync(AdjustmentsUploadTab.LinkText(), Log);
+            await Driver.ClickAsync(AdjustmentsUploadTab.LinkText());
             await SwitchToiFrameAsync();
             await Task.Delay(1000); // Wait for page to load
             return this;
@@ -118,7 +118,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOnAdjustmentsTabAndVerifyItLoaded()
         {
             Log.Step("Click on Adjustments tab and verify it loaded.");
-            await Driver.ClickAsync(AdjustmentsTab.LinkText(), Log);
+            await Driver.ClickAsync(AdjustmentsTab.LinkText());
             await SwitchToiFrameAsync();
             await Task.Delay(1000); // Wait for page to load
             return this;
@@ -127,16 +127,16 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOnCountsAndVerifyItLoaded()
         {
             Log.Step("Click on Counts tab and verify it loaded.");
-            await Driver.ClickAsync(CountsTab.LinkText(), Log);
+            await Driver.ClickAsync(CountsTab.LinkText());
             await SwitchToiFrameAsync();
-            await Driver.WaitUntilElementLoadsAsync(BalancesTabHeader.XPath(), Log, 30);
+            await Driver.WaitUntilElementLoadsAsync(BalancesTabHeader.XPath(), 30);
             return this;
         }
 
         public async Task<InternalInventoryManagementPage> ClickBalancesTabAndVerifyItLoaded()
         {
             Log.Step("Click on Balances tab and verify it loaded.");
-            await Driver.ClickAsync(BalancesTab.LinkText(), Log);
+            await Driver.ClickAsync(BalancesTab.LinkText());
             await SwitchToiFrameAsync();
             await Task.Delay(1000); // Wait for page to load
             return this;
@@ -145,7 +145,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickBuyBackManagementAndVerifyItLoaded()
         {
             Log.Step("Click on Buyback Management tab and verify it loaded.");
-            await Driver.ClickAsync(BuyBackManagementTab.LinkText(), Log);
+            await Driver.ClickAsync(BuyBackManagementTab.LinkText());
             await Task.Delay(1000); // Wait for page to load
             return this;
         }
@@ -153,7 +153,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickReturnManagementAndVerifyItLoaded()
         {
             Log.Step("Click on Return Management tab and verify it loaded.");
-            await Driver.ClickAsync(ReturnManagementTab.LinkText(), Log);
+            await Driver.ClickAsync(ReturnManagementTab.LinkText());
             await Task.Delay(1000); // Wait for page to load
             return this;
         }
@@ -161,7 +161,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
         public async Task<InternalInventoryManagementPage> ClickOnForecastManagementTabAndVerifyItLoaded()
         {
             Log.Step("Click on Forecast Management tab and verify it loaded.");
-            await Driver.ClickAsync(ForecastManagementTab.LinkText(), Log);
+            await Driver.ClickAsync(ForecastManagementTab.LinkText());
             await Task.Delay(1000); // Wait for page to load
             return this;
         }
@@ -173,7 +173,7 @@ namespace VaxCare.Pages.InternalInventoryManagement
             await Task.Delay(500);
             try
             {
-                var iframe = await Driver.FindElementAsync("iframe".TagName(), Log, 10);
+                var iframe = await Driver.FindElementAsync("iframe".TagName(), 10);
                 if (iframe != null)
                 {
                     Driver.SwitchTo().Frame(iframe);

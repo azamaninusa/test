@@ -35,12 +35,12 @@ namespace VaxCare.Pages.Login
         {
             var passwordToUse = failLogin ? IncorrectPassword : Password;
             Log.Step("Login to the Portal.");
-            await Driver.NavigateAsync(url, Log);
+            await Driver.NavigateAsync(url);
             await Driver.FindElementAsync(_userNameFieldId.Id());
-            await Driver.SendKeysAsync(_userNameFieldId.Id(), User, Log);
-            await Driver.ClickAsync(_nextButtonId.Id(), Log);
-            await Driver.SendKeysAsync(_passwordFieldId.Id(), passwordToUse, Log, true);
-            await Driver.ClickAsync(_signInButtonId.Id(), Log);
+            await Driver.SendKeysAsync(_userNameFieldId.Id(), User);
+            await Driver.ClickAsync(_nextButtonId.Id());
+            await Driver.SendKeysAsync(_passwordFieldId.Id(), passwordToUse, true);
+            await Driver.ClickAsync(_signInButtonId.Id());
             return await GoToAsync(async _ => new PortalPage(Driver, Log));
         }
 
