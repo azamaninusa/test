@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
@@ -97,8 +98,9 @@ namespace VaxCare.Core
         // Success and Failure handlers
         protected async Task HandleTestFailureAsync(Exception ex, string testName, string? contextInfo = null)
         {
-            // Log the error to serilog
+            // Log error with context using helper
             Log.Error(ex, $"Test failed: {testName}");
+            ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"Test failed: {testName}", Driver);
             
             // Capture screenshot on failure
             var screenshotPath = ScreenshotHelper.CaptureScreenshot(Driver, testName);
@@ -115,10 +117,11 @@ namespace VaxCare.Core
                     }
                     else
                     {
-                        clickablePath = "file:///" + Path.GetFullPath(screenshotPath).Replace("\\", "/").Replace(":", "");
+                        var fullPath = Path.GetFullPath(screenshotPath).Replace("\\", "/").Replace(":", "");
+                        clickablePath = "file:///" + fullPath;
                     }
                 }
-                Log.Information($"Screenshot saved to: {clickablePath}");
+                Log.Error($"Screenshot saved to: {clickablePath}");
                 Log.Information($"Screenshot path (raw): {screenshotPath}");
             }
             else
@@ -126,15 +129,55 @@ namespace VaxCare.Core
                 Log.Warning("Failed to capture screenshot");
             }
 
+            // Get error details for Teams message
+            var (methodName, fileName, lineNumber) = GetErrorDetails(ex);
+            string currentUrl = GetCurrentUrl(Driver);
+
             // Message to teams
             var message = $"**Test Failed: '{testName}'**\n" +
+                $"Method: {methodName}\n" +
+                $"Location: {fileName}:{lineNumber}\n" +
+                $"URL: {currentUrl}\n" +
                 $"Exception: {ex.Message}\n";
             if (!string.IsNullOrEmpty(contextInfo))
                 message += $"Context: {contextInfo}\n";
             if (!string.IsNullOrEmpty(screenshotPath))
-                message += $"Screenshot saved to {screenshotPath}";
+                message += $"Screenshot: {screenshotPath}";
 
             await TeamsNotifierHelper.SendMessageAsync(_teamsWebhook, message);
+        }
+
+        private static (string methodName, string fileName, int lineNumber) GetErrorDetails(Exception ex)
+        {
+            var stackTrace = new StackTrace(ex, true);
+            var frame = stackTrace.GetFrame(0);
+            
+            string methodName = "Unknown";
+            string fileName = "Unknown";
+            int lineNumber = 0;
+            
+            if (frame != null)
+            {
+                var method = frame.GetMethod();
+                methodName = method != null ? $"{method.DeclaringType?.Name}.{method.Name}" : "Unknown";
+                fileName = frame.GetFileName() ?? "Unknown";
+                lineNumber = frame.GetFileLineNumber();
+            }
+            
+            return (methodName, fileName, lineNumber);
+        }
+
+        private static string GetCurrentUrl(IWebDriver? driver)
+        {
+            try
+            {
+                if (driver != null)
+                {
+                    return driver.Url;
+                }
+            }
+            catch { }
+            return "N/A";
         }
 
         protected async Task HandleTestSuccessAsync(string testName)

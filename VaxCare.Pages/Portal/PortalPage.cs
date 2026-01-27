@@ -4,6 +4,7 @@ using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Entities.Patients;
 using VaxCare.Core.Extensions;
+using VaxCare.Core.Helpers;
 using VaxCare.Core.Logger;
 using VaxCare.Core.TestDTOs;
 using VaxCare.Core.TestFixtures;
@@ -422,16 +423,8 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                // Format file path as clickable link for IDE navigation
-                var filePath = Path.GetFullPath("VaxCare.Pages/Portal/PortalPage.cs").Replace("\\", "/");
-                if (filePath.Contains(":"))
-                {
-                    filePath = "file:///" + filePath.Replace(":", "").Replace("\\", "/");
-                }
                 Log.Error($"AddAppointmentToScheduleAsync FAILED for patient {patient.Name}");
-                Log.Error($"Location: {filePath}:317 (PortalPage.AddAppointmentToScheduleAsync)");
-                Log.Error($"Error details: {ex.Message}");
-                Log.Error($"Stack trace: {ex.StackTrace}");
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"AddAppointmentToScheduleAsync error for patient {patient.Name}", Driver.Driver);
                 throw;
             }
         }
@@ -485,9 +478,8 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"CreateNewPatientAsync FAILED for patient {patient.FirstName} {patient.LastName} at PortalPage.CreateNewPatientAsync (line ~354)");
-                Log.Error($"Error details: {ex.Message}");
-                Log.Error($"Stack trace: {ex.StackTrace}");
+                Log.Error($"CreateNewPatientAsync FAILED for patient {patient.FirstName} {patient.LastName}");
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"CreateNewPatientAsync error for patient {patient.FirstName} {patient.LastName}", Driver.Driver);
                 throw;
             }
         }
@@ -510,9 +502,8 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"SelectMatDropdownOptionAsync FAILED while selecting '{option}' at PortalPage.SelectMatDropdownOptionAsync (line ~451)");
-                Log.Error($"Error details: {ex.Message}");
-                Log.Error($"Stack trace: {ex.StackTrace}");
+                Log.Error($"SelectMatDropdownOptionAsync FAILED while selecting '{option}'");
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"SelectMatDropdownOptionAsync error while selecting '{option}'", Driver.Driver);
                 throw;
             }
         }
@@ -798,7 +789,8 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "The patient wasn't deleted. The patient shouldn't be seen after deleting.");
+                Log.Error("The patient wasn't deleted. The patient shouldn't be seen after deleting.");
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, "DeleteAppointmentAsync error", Driver.Driver);
                 throw;
             }
 
