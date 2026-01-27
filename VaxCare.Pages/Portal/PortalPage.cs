@@ -56,9 +56,13 @@ namespace VaxCare.Pages.Portal
 
         private const string DatePickerInput = "datePickerInput";
 
-        private const string DivWithText = "//div[contains(text(), '{0}')]";
-        private const string SpanWithText = "//span[text()= '{0}']";
-        private const string LinkWithText = "//a[contains(text(),'{0}')]";
+        private const string DivWithText = "//div[contains(text(), '{0}')]";
+        private const string SpanWithText = "//span[text()= '{0}']";
+        private const string LinkWithText = "//a[contains(text(),'{0}')]";
+        // XPath to find patient with appointment time: finds div with patient name, then following sibling with appointment time
+        private const string PatientWithApptTimeAndNameXpath = "//div[@id='table-container']//tr//div[text()='{0}']/ancestor::td[contains(@class,'column-patientname')]/following-sibling::td[contains(@class,'appointmenttime')]/span[text()='{1}']";
+        private const string PatientRowWithLastNameXpath = "//div[@id='table-container']//tr//div[text()=' {0}, ']/ancestor::tr[contains(@class,'appt-row')]";
+        private const string AppointmentTimeSpanXpath = ".//td[contains(@class,'appointmenttime')]//span";
 
         private const string LoadingIcon = "app-loading-image";
         private const string DatePicker = "datepickerTitle";
@@ -705,14 +709,36 @@ namespace VaxCare.Pages.Portal
                 return this;
             }
 
-            var exists = await IsPatientInScheduleAsync(_currentPatient.LastName, _currentPatient.Name);
+            // Match legacy behavior: format XPath with patient last name and appointment time
+            // First, get the appointment time from the schedule for this patient
+            var patientNameOnSchedule = $" {_currentPatient.LastName}, {_currentPatient.FirstName} ";
+            
+            // Find the patient row and extract appointment time
+            var patientRowXpath = string.Format(PatientRowWithLastNameXpath, _currentPatient.LastName);
+            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
+            
+            // Extract appointment time from the row
+            var appointmentTimeSpan = patientRow.FindElement(By.XPath(AppointmentTimeSpanXpath));
+            var appointmentTime = " " + appointmentTimeSpan.Text.Trim() + " ";
+            
+            // Format XPath matching legacy: PatientWithApptTimeAndNameXpath with patient last name and appointment time
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", appointmentTime);
+            
+            // Wait for element to appear (matching legacy WaitForElementToAppear)
+            Log.Step($"{patientNameOnSchedule} scheduled for {appointmentTime}");
+            await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
 
-            if (!exists)
+            if (shouldClick)
             {
-                Log.Error($"Expected patient {_currentPatient.Name} to have an appointment in schedule, but none was found.");
+                // Click on the scheduled patient appointment
+                Log.Step("Clicking patient's appointment");
+                await Driver.ClickAsync(scheduledPatientXpath.XPath(), 15);
+                
+                // Wait for edit appointment button to appear
+                Log.Step("Waiting for Edit Appointment Button");
+                await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
             }
 
-            // `shouldClick` is ignored for now; legacy used it to optionally open the appointment.
             return this;
         }
 
