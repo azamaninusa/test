@@ -1,3 +1,4 @@
+using System.IO;
 using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
@@ -372,9 +373,35 @@ namespace VaxCare.Pages.Portal
                     Log.Information($"Step 4: Provider field already has value '{providerValueAttribute}', skipping provider selection");
                 }
 
-                Log.Information("Step 5: Clicking 'Add Appointment to Schedule' button");
-                await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
-                Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button");
+                // Match legacy behavior: wait after provider selection before clicking Add button
+                Log.Information("Step 5: Waiting for UI to settle after provider selection (matching legacy Sleep(3000))");
+                await Task.Delay(3000);
+                Log.Information("✓ UI settled");
+
+                Log.Information("Step 6: Clicking 'Add Appointment to Schedule' button");
+                // Wait for button to be clickable and use JavaScript click as fallback if intercepted
+                try
+                {
+                    await Driver.WaitUntilElementLoadsAsync(ScheduleAddAppointmentButton.Id(), 15);
+                    var isClickable = await Driver.IsElementClickableAsync(ScheduleAddAppointmentButton.Id(), 5);
+                    if (isClickable)
+                    {
+                        await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
+                        Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button");
+                    }
+                    else
+                    {
+                        Log.Warning("Button not clickable via normal click, using JavaScript click");
+                        await Driver.ExecuteJavaScriptClickAsync(ScheduleAddAppointmentButton.Id());
+                        Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button (via JavaScript)");
+                    }
+                }
+                catch (ElementClickInterceptedException)
+                {
+                    Log.Warning("Element click intercepted, using JavaScript click as fallback");
+                    await Driver.ExecuteJavaScriptClickAsync(ScheduleAddAppointmentButton.Id());
+                    Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button (via JavaScript fallback)");
+                }
 
                 Log.Information("Step 6: Clicking 'Done' button");
                 await Driver.ClickAsync(DoneButton.Id());
@@ -385,7 +412,14 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"AddAppointmentToScheduleAsync FAILED for patient {patient.Name} at PortalPage.AddAppointmentToScheduleAsync (line ~317)");
+                // Format file path as clickable link for IDE navigation
+                var filePath = Path.GetFullPath("VaxCare.Pages/Portal/PortalPage.cs").Replace("\\", "/");
+                if (filePath.Contains(":"))
+                {
+                    filePath = "file:///" + filePath.Replace(":", "").Replace("\\", "/");
+                }
+                Log.Error($"AddAppointmentToScheduleAsync FAILED for patient {patient.Name}");
+                Log.Error($"Location: {filePath}:317 (PortalPage.AddAppointmentToScheduleAsync)");
                 Log.Error($"Error details: {ex.Message}");
                 Log.Error($"Stack trace: {ex.StackTrace}");
                 throw;

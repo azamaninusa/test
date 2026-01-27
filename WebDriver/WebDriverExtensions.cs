@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using Serilog;
 
@@ -241,11 +241,26 @@ namespace VaxCare.Core.WebDriver
             element.SendKeys(text);
         }
 
-        /// <summary>
-        /// Sends keys to an Element.
-        /// </summary>
-        /// <returns></returns>
-        public static async Task SendKeysAsync(this IWebDriver driver, IWebElement element, string text)
+        /// <summary>
+        /// Clicks an element using JavaScript execution. Useful when element is intercepted by another element.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task ExecuteJavaScriptClickAsync(this IWebDriver driver, By by, int timeoutInSeconds = 10)
+        {
+            var element = await driver.FindElementAsync(by, timeoutInSeconds);
+            await Task.Run(() =>
+            {
+                var jsExecutor = (IJavaScriptExecutor)driver;
+                jsExecutor.ExecuteScript("arguments[0].scrollIntoView(true);", element);
+                jsExecutor.ExecuteScript("arguments[0].click();", element);
+            });
+        }
+
+        /// <summary>
+        /// Sends keys to an Element.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task SendKeysAsync(this IWebDriver driver, IWebElement element, string text)
         {
             await Task.Run(() =>
             {

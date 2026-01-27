@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 
 namespace VaxCare.Core.Helpers
 {
@@ -126,12 +126,21 @@ namespace VaxCare.Core.Helpers
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var filename = $"{sanitizedTestName}_{timestamp}.png";
                 
-                // Build filepath manually to avoid Path.Combine issues with mixed path separators
-                // Ensure we use the correct separator for the screenshotsDir path
-                var filepath = screenshotsDir.TrimEnd('/', '\\') + "/" + filename;
+                // Build filepath using Path.Combine for proper OS-specific path handling
+                // Convert screenshotsDir to use OS-specific separators
+                var normalizedScreenshotsDir = screenshotsDir.Replace('/', Path.DirectorySeparatorChar);
+                var filepath = Path.Combine(normalizedScreenshotsDir, filename);
+                
+                // Ensure the directory exists before saving (handle case where directory creation failed)
+                var directoryPath = Path.GetDirectoryName(filepath);
+                if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                    Console.WriteLine($"Created screenshot directory: {directoryPath}");
+                }
                 
                 Console.WriteLine($"Attempting to save screenshot to: {filepath}");
-                Console.WriteLine($"Directory exists: {Directory.Exists(screenshotsDir)}");
+                Console.WriteLine($"Directory exists: {Directory.Exists(directoryPath)}");
                 
                 screenshot.SaveAsFile(filepath);
                 Console.WriteLine($"Screenshot successfully saved to: {filepath}");
