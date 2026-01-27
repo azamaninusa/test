@@ -41,9 +41,15 @@ namespace VaxCare.Pages.Portal
         private const string PatientInfoRiskDetails = "//p[contains(@class,'fade eligibility-details')]";
         private const string ScheduleRiskDescriptionCN = "//*[@class= 'eligibilitydescription']";
         private const string ScheduleRiskDetails = ".//div[contains(@class,'eligibilitydetails')]";
-        private const string PatientInSearchBox = "//div[contains(@id,'cdk-overlay')]//span[@class='patient-name']/span[text()='{0}']";
-        private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
-        private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
+        private const string PatientInSearchBox = "//div[contains(@id,'cdk-overlay')]//span[@class='patient-name']/span[text()='{0}']";
+        private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
+        private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
+
+        // Clinic/location selectors used by VerifyAppointmentLocationAndDayCanBeChanged helpers
+        private const string ClinicDropdown = "//mat-select[@id='clinicDropDown']//div[contains(@class,'mat-select-arrow')]";
+        private const string ClinicSelector = "//mat-select[@id='clinicSelector']//div[contains(@class,'mat-select-arrow-wrapper')]";
+        private const string ClinicSearchBox = "//input[@placeholder='Search']";
+        private const string ClinicOption = "//span[contains(text(),'{0}')]";
 
         private const string DatePickerInput = "datePickerInput";
 
@@ -459,16 +465,25 @@ namespace VaxCare.Pages.Portal
             Log.Step($"Change location on appointment for {patient.Name} to '{newLocation}'.");
 
             // Click the patient's row (row contains the patient's name)
-            await Driver.ClickAsync(string.Format(DivWithText, $" {patient.LastName}, ").XPath());
+            var patientRowSelector = string.Format(DivWithText, $" {patient.LastName}, ");
+            await Driver.WaitUntilElementLoadsAsync(patientRowSelector.XPath(), 15);
+            await Driver.ClickAsync(patientRowSelector.XPath());
+
+            // Open Edit Appointment
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
             await Driver.ClickAsync(EditAppointmentButton.Id());
 
-            // Open the clinic/location dropdown
+            // Open the clinic/location dropdown (wait to avoid timing issues)
+            await Driver.WaitUntilElementLoadsAsync(ClinicDropdown.XPath(), 15);
             await Driver.ClickAsync(ClinicDropdown.XPath());
 
             // Select the desired location option
-            await Driver.ClickAsync(string.Format(SpanWithText, newLocation).XPath());
+            var locationSelector = string.Format(SpanWithText, newLocation);
+            await Driver.WaitUntilElementLoadsAsync(locationSelector.XPath(), 15);
+            await Driver.ClickAsync(locationSelector.XPath());
 
             // Save changes and wait for the patient info window to close
+            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
             await Driver.ClickAsync(PatientInfoSaveButton.XPath());
             await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
 
