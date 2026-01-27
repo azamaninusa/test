@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
 using VaxCare.Core.Entities.Patients;
@@ -339,7 +339,12 @@ namespace VaxCare.Pages.Portal
 
         private async Task CreateNewPatientAsync(TestPatient patient, string insuranceName = "Uninsured")
         {
-            await Driver.ClickAsync(CreateNewPatientButton.Id());
+            // Open the \"Create New Patient\" modal
+            await Driver.ClickAsync(CreateNewPatientButton.Id());
+
+            // Wait for the patient info window to be fully loaded before typing
+            await Driver.WaitUntilElementLoadsAsync(AddPatientWindow.Id(), 15);
+
             await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
             await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
             await SelectMatDropdownOptionAsync(NewPatientGender.Id(), patient.Gender == 1 ? "Male" : "Female");
