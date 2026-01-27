@@ -1,4 +1,5 @@
 using OpenQA.Selenium;
+using Serilog;
 
 namespace VaxCare.Core.WebDriver
 {
@@ -10,6 +11,9 @@ namespace VaxCare.Core.WebDriver
     {
         IWebDriver Driver { get; }
         string Url => Driver.Url;
+        
+        Task<T> ExecuteAsync<T>(Func<IWebDriver, Task<T>> action);
+        Task ExecuteAsync(Func<IWebDriver, Task> action);
     }
 
     /// <summary>
@@ -19,10 +23,22 @@ namespace VaxCare.Core.WebDriver
     public class WebDriverActor : IWebDriverActor
     {
         public IWebDriver Driver { get; }
+        internal ILogger? _logger;
 
-        public WebDriverActor(IWebDriver driver)
+        public WebDriverActor(IWebDriver driver, ILogger? logger = null)
         {
             Driver = driver ?? throw new ArgumentNullException(nameof(driver));
+            _logger = logger;
+        }
+
+        public async Task<T> ExecuteAsync<T>(Func<IWebDriver, Task<T>> action)
+        {
+            return await action(Driver);
+        }
+
+        public async Task ExecuteAsync(Func<IWebDriver, Task> action)
+        {
+            await action(Driver);
         }
     }
 }
