@@ -442,41 +442,46 @@ namespace VaxCare.Pages.Portal
             
             try
             {
-                Log.Information("Step 1: Clicking 'Create New Patient' button");
+                // Wait for loading spinner to disappear before clicking (prevents ElementClickInterceptedException)
+                Log.Information("Step 1: Waiting for loading spinner to disappear");
+                await Driver.WaitForElementToDisappearAsync(LoadingSpinner.XPath(), 15);
+                Log.Information("✓ Loading spinner disappeared");
+
+                Log.Information("Step 2: Clicking 'Create New Patient' button");
                 await Driver.ClickAsync(CreateNewPatientButton.Id());
                 Log.Information("✓ Successfully clicked 'Create New Patient' button");
 
                 // Wait for the patient info window to be fully loaded before typing
-                Log.Information("Step 2: Waiting for patient information modal to load");
+                Log.Information("Step 3: Waiting for patient information modal to load");
                 await Driver.WaitUntilElementLoadsAsync(AddPatientWindow.Id(), 15);
                 Log.Information("✓ Patient information modal loaded");
 
-                Log.Information($"Step 3: Entering first name: '{patient.FirstName}'");
+                Log.Information($"Step 4: Entering first name: '{patient.FirstName}'");
                 await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
                 Log.Information($"✓ Entered first name: {patient.FirstName}");
 
-                Log.Information($"Step 4: Entering last name: '{patient.LastName}'");
+                Log.Information($"Step 5: Entering last name: '{patient.LastName}'");
                 await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
                 Log.Information($"✓ Entered last name: {patient.LastName}");
 
                 var genderText = patient.Gender == 1 ? "Male" : "Female";
-                Log.Information($"Step 5: Selecting gender: '{genderText}'");
+                Log.Information($"Step 6: Selecting gender: '{genderText}'");
                 await SelectMatDropdownOptionAsync(NewPatientGender.Id(), genderText);
                 Log.Information($"✓ Selected gender: {genderText}");
 
-                Log.Information($"Step 6: Entering date of birth: '{patient.DoB}'");
+                Log.Information($"Step 7: Entering date of birth: '{patient.DoB}'");
                 await Driver.SendKeysAsync(NewPatientDoB.Id(), patient.DoB);
                 Log.Information($"✓ Entered DOB: {patient.DoB}");
 
-                Log.Information($"Step 7: Entering phone number: '{patient.PhoneNumber}'");
+                Log.Information($"Step 8: Entering phone number: '{patient.PhoneNumber}'");
                 await Driver.SendKeysAsync(NewPatientPhone.Id(), patient.PhoneNumber);
                 Log.Information($"✓ Entered phone: {patient.PhoneNumber}");
 
-                Log.Information($"Step 8: Entering payer/insurance: '{insuranceName}'");
+                Log.Information($"Step 9: Entering payer/insurance: '{insuranceName}'");
                 await Driver.SendKeysAsync(NewPatientPayer.Id(), insuranceName);
                 Log.Information($"✓ Entered payer: {insuranceName}");
 
-                Log.Information("Step 9: Clicking 'Save' button to create patient");
+                Log.Information("Step 10: Clicking 'Save' button to create patient");
                 await Driver.ClickAsync(SaveButton.XPath());
                 Log.Information("✓ Successfully clicked 'Save' button");
 
