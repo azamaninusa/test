@@ -602,10 +602,12 @@ namespace VaxCare.Pages.Portal
             }
 
             var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
-            // Use FindAllElementsAsync with parent and child selectors (matching legacy GetElements behavior)
+            // Use FindAllElementsAsync with parent and child selectors (matching legacy GetElements behavior).
+            // Use the main appointment grid container as parent instead of a specific table container
+            // to avoid failures when the inner structure changes.
             var appointments = await Driver.FindAllElementsAsync(
-                By.XPath("//div[@id='table-container']"),
-                By.XPath(scheduledPatientXpath),
+                AppointmentGridLoadedXpath.XPath(),
+                scheduledPatientXpath.XPath(),
                 10);
             
             return appointments.Count;
