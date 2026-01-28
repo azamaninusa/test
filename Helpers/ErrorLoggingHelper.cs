@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using OpenQA.Selenium;
 using Serilog;
 
@@ -63,22 +64,92 @@ namespace VaxCare.Core.Helpers
 
         /// <summary>
         /// Extracts method name, file name, and line number from exception stack trace
+        /// Looks for the actual method in the fluent chain, not just wrapper methods
         /// </summary>
         private static (string methodName, string fileName, int lineNumber) GetStackTraceInfo(Exception ex)
         {
-            var stackTrace = new StackTrace(ex, true);
-            var frame = stackTrace.GetFrame(0);
+            // Check if exception message contains chain step info
+            if (ex.Message.Contains("Failed in chain step:"))
+            {
+                var stepInfo = ex.Message.Replace("Failed in chain step: ", "").Split('\n')[0].Trim();
+                if (!string.IsNullOrEmpty(stepInfo))
+                {
+                    // Try to get file info from inner exception
+                    var innerEx = ex.InnerException;
+                    if (innerEx != null)
+                    {
+                        var innerStackTrace = new StackTrace(innerEx, true);
+                        for (int i = 0; i < innerStackTrace.FrameCount; i++)
+                        {
+                            var frame = innerStackTrace.GetFrame(i);
+                            if (frame?.GetMethod()?.DeclaringType?.Name?.EndsWith("Page") == true)
+                            {
+                                return (stepInfo, frame.GetFileName() ?? "Unknown", frame.GetFileLineNumber());
+                            }
+                        }
+                    }
+                    return (stepInfo, "Unknown", 0);
+                }
+            }
 
+            var stackTrace = new StackTrace(ex, true);
+            
             string methodName = "Unknown";
             string fileName = "Unknown";
             int lineNumber = 0;
 
-            if (frame != null)
+            // Look through stack frames to find the actual method that failed
+            // Skip wrapper methods like "Then", "RunTestAsync", etc.
+            var skipPatterns = new[] { "Then", "RunTestAsync", "MoveNext", "Invoke", "ExecuteAsync", "<>c", "AsyncStateMachine" };
+            
+            for (int i = 0; i < stackTrace.FrameCount; i++)
             {
+                var frame = stackTrace.GetFrame(i);
+                if (frame == null) continue;
+
                 var method = frame.GetMethod();
-                methodName = method != null ? $"{method.DeclaringType?.Name}.{method.Name}" : "Unknown";
-                fileName = frame.GetFileName() ?? "Unknown";
-                lineNumber = frame.GetFileLineNumber();
+                if (method == null) continue;
+
+                var declaringType = method.DeclaringType;
+                if (declaringType == null) continue;
+
+                var methodNameOnly = method.Name;
+                var typeName = declaringType.Name;
+                var fullMethodName = $"{typeName}.{methodNameOnly}";
+
+                // Skip compiler-generated and wrapper methods
+                bool shouldSkip = skipPatterns.Any(pattern => 
+                    methodNameOnly.Contains(pattern) || 
+                    typeName.Contains(pattern));
+
+                if (shouldSkip)
+                {
+                    continue;
+                }
+
+                // Found a real method - check if it's from a page object or test
+                // Look for methods ending in "Async" or classes ending in "Page"
+                if (methodNameOnly.EndsWith("Async") || 
+                    typeName.EndsWith("Page") || 
+                    typeName.EndsWith("Test"))
+                {
+                    methodName = fullMethodName;
+                    fileName = frame.GetFileName() ?? "Unknown";
+                    lineNumber = frame.GetFileLineNumber();
+                    
+                    // Prefer methods from Page classes
+                    if (typeName.EndsWith("Page"))
+                    {
+                        break;
+                    }
+                }
+                // If this is the first non-skipped frame, use it as fallback
+                else if (methodName == "Unknown")
+                {
+                    methodName = fullMethodName;
+                    fileName = frame.GetFileName() ?? "Unknown";
+                    lineNumber = frame.GetFileLineNumber();
+                }
             }
 
             return (methodName, fileName, lineNumber);
