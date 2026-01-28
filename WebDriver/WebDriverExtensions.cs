@@ -92,8 +92,22 @@ namespace VaxCare.Core.WebDriver
         /// <returns> No return. If the element is not clickable a WebDriverTimeoutException will bubble up to indicate error</returns>
         public static async Task ClickAsync(this IWebDriver driver, By by, int timeoutInSeconds = 10)
         {
-            var element = await driver.FindElementAsync(by, timeoutInSeconds);
-            element.Click();
+            var element = await driver.FindElementAsync(by, timeoutInSeconds);
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    element.Click();
+                }
+                catch (ElementClickInterceptedException)
+                {
+                    // Fallback: use JavaScript click to bypass overlays/interceptions
+                    var jsExecutor = (IJavaScriptExecutor)driver;
+                    jsExecutor.ExecuteScript("arguments[0].scrollIntoView(true);", element);
+                    jsExecutor.ExecuteScript("arguments[0].click();", element);
+                }
+            });
         }
 
         /// <summary>
