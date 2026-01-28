@@ -643,6 +643,15 @@ namespace VaxCare.Pages.Portal
 
             try
             {
+                // If the appointment table itself is not present, there is nothing to delete.
+                // Do NOT fail the test in this case – just log and exit.
+                var tableExists = await Driver.ElementExistsAsync(AppointmentTable.Id(), shouldLog: false);
+                if (!tableExists)
+                {
+                    Log.Warning("DeleteAllPatientAppointmentsAsync: Appointment table not found. Skipping delete.");
+                    return this;
+                }
+
                 // Get all appointment rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
                 var checkedInPatientRows = await Driver.FindAllElementsAsync(
                     AppointmentTable.Id(),
