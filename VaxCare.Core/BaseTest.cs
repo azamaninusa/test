@@ -106,20 +106,8 @@ namespace VaxCare.Core
             if (!string.IsNullOrEmpty(screenshotPath))
             {
                 // Format path as clickable file:// URL for easy navigation in IDEs
-                var clickablePath = screenshotPath.Replace('\\', '/');
-                if (!clickablePath.StartsWith("file://"))
-                {
-                    // Convert Windows path to file:// URL format
-                    if (Path.IsPathRooted(screenshotPath))
-                    {
-                        clickablePath = "file:///" + clickablePath.Replace(":", "").Replace("\\", "/");
-                    }
-                    else
-                    {
-                        var fullPath = Path.GetFullPath(screenshotPath).Replace("\\", "/").Replace(":", "");
-                        clickablePath = "file:///" + fullPath;
-                    }
-                }
+                // Use the same formatting logic as ErrorLoggingHelper.FormatFileUrl
+                string clickablePath = FormatScreenshotPath(screenshotPath);
                 Log.Error($"Screenshot saved to: {clickablePath}");
                 Log.Information($"Screenshot path (raw): {screenshotPath}");
             }
@@ -177,6 +165,64 @@ namespace VaxCare.Core
             }
             catch { }
             return "N/A";
+        }
+
+        /// <summary>
+        /// Formats screenshot path as clickable file:// URL
+        /// Handles both Windows (C:\path) and Unix (/path) paths
+        /// </summary>
+        private static string FormatScreenshotPath(string screenshotPath)
+        {
+            if (string.IsNullOrEmpty(screenshotPath))
+            {
+                return "N/A";
+            }
+
+            try
+            {
+                // Normalize the path - convert backslashes to forward slashes
+                var normalizedPath = screenshotPath.Replace("\\", "/");
+                
+                // Handle Windows absolute paths (e.g., C:\path\to\file.png)
+                if (normalizedPath.Length >= 3 && 
+                    char.IsLetter(normalizedPath[0]) && 
+                    normalizedPath[1] == ':' && 
+                    normalizedPath[2] == '/')
+                {
+                    // Windows path: C:/path/to/file.png -> file:///C:/path/to/file.png
+                    return $"file:///{normalizedPath}";
+                }
+                // Handle Unix absolute paths (e.g., /path/to/file.png)
+                else if (normalizedPath.StartsWith("/"))
+                {
+                    // Unix path: /path/to/file.png -> file:///path/to/file.png
+                    return $"file://{normalizedPath}";
+                }
+                // Handle relative paths - convert to absolute
+                else
+                {
+                    var fullPath = Path.GetFullPath(screenshotPath).Replace("\\", "/");
+                    if (fullPath.Length >= 3 && 
+                        char.IsLetter(fullPath[0]) && 
+                        fullPath[1] == ':' && 
+                        fullPath[2] == '/')
+                    {
+                        return $"file:///{fullPath}";
+                    }
+                    else if (fullPath.StartsWith("/"))
+                    {
+                        return $"file://{fullPath}";
+                    }
+                    else
+                    {
+                        return $"file:///{fullPath}";
+                    }
+                }
+            }
+            catch
+            {
+                return screenshotPath;
+            }
         }
 
         protected async Task HandleTestSuccessAsync(string testName)

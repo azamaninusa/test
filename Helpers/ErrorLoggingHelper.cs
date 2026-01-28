@@ -102,7 +102,7 @@ namespace VaxCare.Core.Helpers
 
             // Look through stack frames to find the actual method that failed
             // Skip wrapper methods like "Then", "RunTestAsync", etc.
-            var skipPatterns = new[] { "Then", "RunTestAsync", "MoveNext", "Invoke", "ExecuteAsync", "<>c", "AsyncStateMachine", "UnpackAndThrowOnError", "Execute", "Click", "SendKeys" };
+            var skipPatterns = new[] { "Then", "RunTestAsync", "MoveNext", "Invoke", "ExecuteAsync", "<>c", "AsyncStateMachine", "UnpackAndThrowOnError", "Execute", "Click", "SendKeys", "DefaultWait", "ThrowTimeoutException", "Until", "InnerInvoke", "RunFromThreadPoolDispatchLoop", "ExecuteWithThreadLocal" };
             
             // First pass: Look for Page class methods ending in "Async" (these are the parent methods from the fluent chain)
             for (int i = 0; i < stackTrace.FrameCount; i++)
