@@ -632,9 +632,62 @@ namespace VaxCare.Pages.Portal
             return await ChangeScheduleDateAsync(numberOfDays);
         }
 
+        /// <summary>
+        /// Deletes all appointments/visits in the schedule table before check-in.
+        /// Matches legacy DeleteAllAppointments() implementation exactly.
+        /// </summary>
+        public async Task<PortalPage> DeleteAllPatientAppointmentsAsync(TestPatient? patient = null)
+        {
+            string patientContext = patient != null ? $" for patient: {patient.Name}" : "";
+            Log.Step($"Delete all appointments in schedule{patientContext}");
+
+            try
+            {
+                // Get all appointment rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
+                var checkedInPatientRows = await Driver.FindAllElementsAsync(
+                    AppointmentTable.Id(),
+                    AppointmentRow.XPath(),
+                    15);
+
+                while (checkedInPatientRows.Count > 0)
+                {
+                    // Click first row (matching legacy: CheckedInPatientRows[0].Click())
+                    await Driver.ClickAsync(checkedInPatientRows[0]);
+
+                    // ClickEditDelete (matching legacy ClickEditDelete method exactly)
+                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                    await Driver.ClickAsync(DeleteButton.Id(), 3);
+                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+                    await Task.Delay(3000); // Sleep(3000) from legacy
+
+                    // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
+                    await WaitForAppointmentGridToLoadAsync();
+
+                    // Re-fetch all rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
+                    checkedInPatientRows = await Driver.FindAllElementsAsync(
+                        AppointmentTable.Id(),
+                        AppointmentRow.XPath(),
+                        15);
+                }
+            }
+            catch (Exception ex)
+            {
+                string patientName = patient?.Name ?? "all patients";
+                Log.Warning($"Failed to delete all appointments for {patientName}. Continuing with check-in.");
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"DeleteAllPatientAppointmentsAsync error for {patientName}", Driver.Driver);
+                // Don't throw - allow check-in to proceed even if deletion fails
+            }
+
+            return this;
+        }
+
         public async Task<PortalPage> CheckInPatientAsync(TestPatient patient)
         {
             Log.Step($"Check in patient: {patient.Name}");
+            
+            // Delete any existing appointments for this patient before check-in
+            await DeleteAllPatientAppointmentsAsync(patient);
+            
             _currentPatient = patient;
 
             // Use existing helper to add an appointment for this patient.
