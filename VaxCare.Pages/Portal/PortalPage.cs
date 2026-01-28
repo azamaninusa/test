@@ -898,8 +898,12 @@ namespace VaxCare.Pages.Portal
 
                 // Step 1: Click on the patient appointment to open the patient info modal
                 var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime ?? "");
-                await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
-                var patientAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 15);
+
+                // Increase wait timeout and add a short delay to let the grid finish any layout/overlay transitions
+                await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 20);
+                await Task.Delay(2000);
+
+                var patientAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 20);
                 await Driver.ClickAsync(patientAppointment);
 
                 // Step 2: Verify initial visit type (should be "Well Visit" by default)
