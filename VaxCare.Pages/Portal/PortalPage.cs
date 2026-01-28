@@ -60,6 +60,7 @@ namespace VaxCare.Pages.Portal
         private const string VisitTypeDropdownArrow = "//mat-select[@id='visitTypeDropdown']//div[contains(@class,'mat-select-arrow')]";
         private const string VisitTypeOption = "//mat-option[contains(@class,'mat-option') and @aria-disabled='false']//span[text()='{0}']";
         private const string VisitTypeDisplayText = "//span[@class='appointment-type']";
+        private const string VisitTypeWellXpath = "//mat-select[@id='visitTypeDropdown']//span[text()='Well']";
 
         private const string DatePickerInput = "datePickerInput";
 
@@ -155,6 +156,8 @@ namespace VaxCare.Pages.Portal
             await Driver.WaitUntilElementLoadsAsync(DatePicker.ClassName(), timeout);
             // This ensures that Appt grid has loaded completely after deleting an appt (matching legacy)
             await Driver.WaitUntilElementLoadsAsync(AppointmentGridLoadedXpath.XPath(), timeout);
+            // Match legacy behavior: give UI extra time to settle after grid load
+            await Task.Delay(3000);
             //await Driver.CheckBrowserConsoleErrorsAsync(Log);
             return this;
         }
@@ -761,55 +764,59 @@ namespace VaxCare.Pages.Portal
 
             try
             {
-                // Get appointment count BEFORE deletion (matching legacy: uses " " + patient.LastName + ", ")
+                // Legacy DeleteAppointment deletes one appointment; here we keep deleting
+                // for the current patient until no appointments remain for that patient.
+
+                // Base XPath used for this patient's appointments in the grid
                 var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {_currentPatient.LastName}, ");
-                var patientsTotalAppts = await Driver.FindAllElementsAsync(
-                    By.XPath("//tbody[contains(@class,'ng-tns')]"),
-                    By.XPath(patientAppointmentXpath),
-                    10);
-                int totalAppts = patientsTotalAppts.Count;
-                Log.Information($"Appointment count before deletion: {totalAppts}");
 
-                // Click on patient appointment using ClickSimple equivalent (simple click, no timeout)
-                // Matching legacy: ClickSimple(String.Format(PatientAppointmentOnSchedulerXpath, " " + patient.LastName + ", "), ElementType.XPath)
-                var patientElement = await Driver.FindElementAsync(patientAppointmentXpath.XPath(), 10);
-                await Driver.ClickAsync(patientElement);
-
-                // ClickEditDelete equivalent (matching legacy ClickEditDelete method)
-                // Click("editAppointmentBtn", ElementType.Id, "Edit Appointment Button", 2);
-                await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
-                
-                // Click("deleteButton", ElementType.Id, "Delete Appointment Link", 3);
-                await Driver.ClickAsync(DeleteButton.Id(), 3);
-                
-                // Click("(//button[@id='saveButton'])[2]", ElementType.XPath, "Delete > Save", 2);
-                await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
-                
-                // Sleep(3000) - matching legacy ClickEditDelete
-                await Task.Delay(3000);
-
-                // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
-                await WaitForAppointmentGridToLoadAsync();
-
-                // Get appointment count AFTER deletion (using GetPatientNameOnSchedule equivalent)
-                // Matching legacy: GetElements(String.Format(PatientAppointmentOnSchedulerXpath, GetPatientNameOnSchedule()), ElementType.XPath)
-                // GetPatientNameOnSchedule() returns " " + patient.LastName + ", " + patient.FirstName + " "
-                var patientNameOnSchedule = $" {_currentPatient.LastName}, {_currentPatient.FirstName} ";
-                var patientsCurrentAppts = await Driver.FindAllElementsAsync(
-                    By.XPath("//tbody[contains(@class,'ng-tns')]"),
-                    By.XPath(string.Format(PatientAppointmentOnSchedulerXpath, patientNameOnSchedule)),
-                    10);
-                int currentApptCount = patientsCurrentAppts.Count;
-                Log.Information($"Appointment count after deletion: {currentApptCount}");
-
-                // Verify count dropped by 1 (matching legacy behavior)
-                if (currentApptCount != totalAppts - 1)
+                while (true)
                 {
-                    Log.Error($"The appointment row count did not decrease. Expected: {totalAppts - 1}, Actual: {currentApptCount}");
-                }
+                    // Find all current appointments for this patient
+                    var currentAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
 
-                // Note: SetIndexForSpecificPatient(false) is not implemented in new framework
-                // as it appears to be legacy-specific state management
+                    var countBefore = currentAppts.Count;
+                    Log.Information($"Current appointment count for {_currentPatient.Name} before delete iteration: {countBefore}");
+
+                    // No more appointments for this patient – we're done
+                    if (countBefore == 0)
+                    {
+                        break;
+                    }
+
+                    // Click first appointment for this patient (equivalent to legacy ClickSimple)
+                    var patientElement = currentAppts.First();
+                    await Driver.ClickAsync(patientElement);
+
+                    // ClickEditDelete equivalent (matching legacy ClickEditDelete method)
+                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                    await Driver.ClickAsync(DeleteButton.Id(), 3);
+                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+                    // Sleep(3000) - matching legacy ClickEditDelete
+                    await Task.Delay(3000);
+
+                    // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad)
+                    await WaitForAppointmentGridToLoadAsync();
+
+                    // Re-check appointment count for this patient after this delete
+                    var remainingAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+                    var countAfter = remainingAppts.Count;
+                    Log.Information($"Appointment count for {_currentPatient.Name} after delete iteration: {countAfter}");
+
+                    if (countAfter >= countBefore)
+                    {
+                        Log.Error($"Appointment count did not decrease after delete iteration. Before: {countBefore}, After: {countAfter}");
+                        // break to avoid infinite loop
+                        break;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -907,8 +914,7 @@ namespace VaxCare.Pages.Portal
                 await Driver.ClickAsync(EditAppointmentButton.Id());
 
                 // Step 2 (legacy): Verify 'Well' is selected by default in the 'Visit Type' dropdown
-                var visitTypeWellXpath = "//mat-select[@id='visitTypeDropdown']//span[text()='Well']";
-                await Driver.WaitUntilElementLoadsAsync(visitTypeWellXpath.XPath(), 15);
+                await Driver.WaitUntilElementLoadsAsync(VisitTypeWellXpath.XPath(), 15);
                 await Task.Delay(1000); // Matching legacy Sleep(1000)
 
                 // Step 3 (legacy): Open the Visit Type dropdown
