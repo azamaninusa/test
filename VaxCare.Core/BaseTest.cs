@@ -98,8 +98,7 @@ namespace VaxCare.Core
         // Success and Failure handlers
         protected async Task HandleTestFailureAsync(Exception ex, string testName, string? contextInfo = null)
         {
-            // Log error with context using helper
-            Log.Error(ex, $"Test failed: {testName}");
+            // Log error with context using helper (this already logs the error message)
             ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"Test failed: {testName}", Driver);
             
             // Capture screenshot on failure

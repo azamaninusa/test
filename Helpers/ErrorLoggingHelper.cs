@@ -199,6 +199,7 @@ namespace VaxCare.Core.Helpers
 
         /// <summary>
         /// Formats file path as clickable file:// URL with line number anchor
+        /// Handles both Windows (C:\path) and Unix (/path) paths
         /// </summary>
         private static string FormatFileUrl(string fileName, int lineNumber)
         {
@@ -209,14 +210,43 @@ namespace VaxCare.Core.Helpers
 
             try
             {
-                var fullPath = Path.GetFullPath(fileName).Replace("\\", "/");
-                if (fullPath.Contains(":"))
+                // Normalize the path - convert backslashes to forward slashes
+                var normalizedPath = fileName.Replace("\\", "/");
+                
+                // Handle Windows absolute paths (e.g., C:\path\to\file.cs)
+                if (normalizedPath.Length >= 3 && 
+                    char.IsLetter(normalizedPath[0]) && 
+                    normalizedPath[1] == ':' && 
+                    normalizedPath[2] == '/')
                 {
-                    return $"file:///{fullPath.Replace(":", "")}#{lineNumber}";
+                    // Windows path: C:/path/to/file.cs -> file:///C:/path/to/file.cs
+                    return $"file:///{normalizedPath}#{lineNumber}";
                 }
+                // Handle Unix absolute paths (e.g., /path/to/file.cs)
+                else if (normalizedPath.StartsWith("/"))
+                {
+                    // Unix path: /path/to/file.cs -> file:///path/to/file.cs
+                    return $"file://{normalizedPath}#{lineNumber}";
+                }
+                // Handle relative paths - convert to absolute
                 else
                 {
-                    return $"file://{fullPath}#{lineNumber}";
+                    var fullPath = Path.GetFullPath(fileName).Replace("\\", "/");
+                    if (fullPath.Length >= 3 && 
+                        char.IsLetter(fullPath[0]) && 
+                        fullPath[1] == ':' && 
+                        fullPath[2] == '/')
+                    {
+                        return $"file:///{fullPath}#{lineNumber}";
+                    }
+                    else if (fullPath.StartsWith("/"))
+                    {
+                        return $"file://{fullPath}#{lineNumber}";
+                    }
+                    else
+                    {
+                        return $"file:///{fullPath}#{lineNumber}";
+                    }
                 }
             }
             catch
@@ -236,19 +266,20 @@ namespace VaxCare.Core.Helpers
             }
 
             // Pattern to match: "in C:\path\to\file.cs:line 123" or "in /path/to/file.cs:line 123"
-            // Matches: "in " followed by path, then ":line " followed by number
-            var pattern = @"(in\s+)([A-Za-z]:[^:]+|/[^:]+|\.\\[^:]+|\.\/[^:]+):(line\s+)(\d+)";
+            // Matches: "in " followed by path (Windows or Unix), then ":line " followed by number
+            // Updated pattern to better handle Windows paths with backslashes
+            var pattern = @"(in\s+)((?:[A-Za-z]:[\\/][^:]+)|(?:[\\/][^:]+)|(?:\.[\\/][^:]+)):(line\s+)(\d+)";
             
             return Regex.Replace(stackTrace, pattern, match =>
             {
                 try
                 {
                     string inKeyword = match.Groups[1].Value; // "in "
-                    string filePath = match.Groups[2].Value; // "C:\path\to\file.cs"
-                    string lineKeyword = match.Groups[3].Value; // "line "
-                    string lineNumber = match.Groups[4].Value; // "123"
+                    string filePath = match.Groups[2].Value; // "C:\path\to\file.cs" or "/path/to/file.cs"
+                    string lineKeyword = match.Groups[4].Value; // "line "
+                    string lineNumber = match.Groups[5].Value; // "123"
 
-                    // Format as clickable file:// URL
+                    // Format as clickable file:// URL (FormatFileUrl handles path normalization)
                     string clickableUrl = FormatFileUrl(filePath, int.Parse(lineNumber));
                     
                     // Return the formatted line with clickable URL
