@@ -881,8 +881,9 @@ namespace VaxCare.Pages.Portal
         }
 
         /// <summary>
+        /// <summary>
         /// Changes the visit type for the current patient's appointment.
-        /// Matches legacy ChangeVisitType behavior.
+        /// Matches legacy ChangeVisitType behavior from Portal2SchedulePage.
         /// </summary>
         public async Task<PortalPage> ChangeVisitTypeAsync(string newVisitType)
         {
@@ -896,52 +897,38 @@ namespace VaxCare.Pages.Portal
             {
                 Log.Step($"Change visit type to '{newVisitType}' for patient {_currentPatient.Name}.");
 
-                // Step 1: Click on the patient appointment to open the patient info modal
-                var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime ?? "");
-
-                // Increase wait timeout and add a short delay to let the grid finish any layout/overlay transitions
-                await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 20);
-                await Task.Delay(2000);
-
-                var patientAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 20);
-                await Driver.ClickAsync(patientAppointment);
-
-                // Step 2: Verify initial visit type (should be "Well Visit" by default)
+                // Legacy: Verify existing appointment and that initial visit type is "Well Visit"
                 await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
                 var initialVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
                 Log.Information($"Initial visit type: {initialVisitType}");
 
-                // Step 3: Click the "Edit Appointment" button
+                // Step 1 (legacy): Click Edit Appointment
                 await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
                 await Driver.ClickAsync(EditAppointmentButton.Id());
 
-                // Step 4: Verify 'Well' is selected by default in the 'Visit Type' dropdown
-                var visitTypeWellXpath = string.Format("//mat-select[@id='visitTypeDropdown']//span[text()='Well']", "");
+                // Step 2 (legacy): Verify 'Well' is selected by default in the 'Visit Type' dropdown
+                var visitTypeWellXpath = "//mat-select[@id='visitTypeDropdown']//span[text()='Well']";
                 await Driver.WaitUntilElementLoadsAsync(visitTypeWellXpath.XPath(), 15);
                 await Task.Delay(1000); // Matching legacy Sleep(1000)
 
-                // Step 5: Click the "Visit Type" dropdown
+                // Step 3 (legacy): Open the Visit Type dropdown
                 await Driver.WaitUntilElementLoadsAsync(VisitTypeDropdownArrow.XPath(), 15);
                 await Driver.ClickAsync(VisitTypeDropdownArrow.XPath());
 
-                // Step 6: Select the new visit type
+                // Step 4 (legacy): Select the new visit type (e.g., 'Sick')
                 var visitTypeOptionXpath = string.Format(VisitTypeOption, newVisitType);
                 await Driver.WaitUntilElementLoadsAsync(visitTypeOptionXpath.XPath(), 15);
                 var visitTypeOption = await Driver.FindElementAsync(visitTypeOptionXpath.XPath(), 15);
                 await Driver.ClickAsync(visitTypeOption);
 
-                // Step 7: Click "Save"
+                // Step 5 (legacy): Save and close the modal
                 await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
                 await Driver.ClickAsync(PatientInfoSaveButton.XPath());
                 await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
 
-                // Step 8: Click on the patient appointment again to open the patient info modal
-                await WaitForAppointmentGridToLoadAsync();
-                await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
-                patientAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 15);
-                await Driver.ClickAsync(patientAppointment);
+                // Step 6 (legacy): Re-verify the appointment exists and visit type updated
+                await VerifyPatientAppointmentExistsAsync(true);
 
-                // Step 9: Verify that the visit type updates in the patient information modal
                 await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
                 var updatedVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
                 var expectedVisitType = $"{newVisitType} Visit";
