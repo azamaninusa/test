@@ -266,18 +266,26 @@ namespace VaxCare.Core.Helpers
             }
 
             // Pattern to match: "in C:\path\to\file.cs:line 123" or "in /path/to/file.cs:line 123"
-            // Matches: "in " followed by path (Windows or Unix), then ":line " followed by number
-            // Updated pattern to better handle Windows paths with backslashes
-            var pattern = @"(in\s+)((?:[A-Za-z]:[\\/][^:]+)|(?:[\\/][^:]+)|(?:\.[\\/][^:]+)):(line\s+)(\d+)";
+            // More robust pattern that handles long Windows and Unix paths
+            // Matches file paths ending with common file extensions, stopping at ":line"
+            // Uses a simpler approach: match everything from "in " to ":line " followed by digits
+            var pattern = @"(in\s+)(.+?):(line\s+)(\d+)";
             
             return Regex.Replace(stackTrace, pattern, match =>
             {
                 try
                 {
                     string inKeyword = match.Groups[1].Value; // "in "
-                    string filePath = match.Groups[2].Value; // "C:\path\to\file.cs" or "/path/to/file.cs"
-                    string lineKeyword = match.Groups[4].Value; // "line "
-                    string lineNumber = match.Groups[5].Value; // "123"
+                    string filePath = match.Groups[2].Value.Trim(); // "C:\path\to\file.cs" or "/path/to/file.cs"
+                    string lineKeyword = match.Groups[3].Value; // "line "
+                    string lineNumber = match.Groups[4].Value; // "123"
+
+                    // Validate that the filePath looks like a file path (contains a file extension)
+                    // This helps avoid false matches
+                    if (!filePath.Contains(".") || filePath.Length < 3)
+                    {
+                        return match.Value; // Return original if it doesn't look like a file path
+                    }
 
                     // Format as clickable file:// URL (FormatFileUrl handles path normalization)
                     string clickableUrl = FormatFileUrl(filePath, int.Parse(lineNumber));
