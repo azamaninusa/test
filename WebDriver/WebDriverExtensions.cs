@@ -96,14 +96,28 @@ namespace VaxCare.Core.WebDriver
             element.Click();
         }
 
-        /// <summary>
-        /// Clicks on the given element, without waiting for it.
-        /// </summary>
-        /// <returns></returns>
-        public static async Task ClickAsync(this IWebDriver driver, IWebElement element)
-        {
-            await Task.Run(() => element.Click());
-        }
+        /// <summary>
+        /// Clicks on the given element, without waiting for it.
+        /// Includes a fallback to JavaScript click if the normal click is intercepted.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task ClickAsync(this IWebDriver driver, IWebElement element)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    element.Click();
+                }
+                catch (ElementClickInterceptedException)
+                {
+                    // Fallback: use JavaScript click to bypass overlays/interceptions
+                    var jsExecutor = (IJavaScriptExecutor)driver;
+                    jsExecutor.ExecuteScript("arguments[0].scrollIntoView(true);", element);
+                    jsExecutor.ExecuteScript("arguments[0].click();", element);
+                }
+            });
+        }
 
         /// <summary>
         /// Retrieves the text of an element via Selectors
