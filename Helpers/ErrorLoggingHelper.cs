@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using OpenQA.Selenium;
 using Serilog;
 
@@ -39,7 +40,8 @@ namespace VaxCare.Core.Helpers
 
             if (!string.IsNullOrEmpty(ex.StackTrace))
             {
-                logger.Error($"Stack Trace:\n{ex.StackTrace}");
+                string formattedStackTrace = FormatStackTraceWithClickableLinks(ex.StackTrace);
+                logger.Error($"Stack Trace:\n{formattedStackTrace}");
             }
         }
 
@@ -100,8 +102,9 @@ namespace VaxCare.Core.Helpers
 
             // Look through stack frames to find the actual method that failed
             // Skip wrapper methods like "Then", "RunTestAsync", etc.
-            var skipPatterns = new[] { "Then", "RunTestAsync", "MoveNext", "Invoke", "ExecuteAsync", "<>c", "AsyncStateMachine" };
+            var skipPatterns = new[] { "Then", "RunTestAsync", "MoveNext", "Invoke", "ExecuteAsync", "<>c", "AsyncStateMachine", "UnpackAndThrowOnError", "Execute", "Click", "SendKeys" };
             
+            // First pass: Look for Page class methods ending in "Async" (these are the parent methods from the fluent chain)
             for (int i = 0; i < stackTrace.FrameCount; i++)
             {
                 var frame = stackTrace.GetFrame(i);
@@ -127,28 +130,67 @@ namespace VaxCare.Core.Helpers
                     continue;
                 }
 
-                // Found a real method - check if it's from a page object or test
-                // Look for methods ending in "Async" or classes ending in "Page"
-                if (methodNameOnly.EndsWith("Async") || 
-                    typeName.EndsWith("Page") || 
-                    typeName.EndsWith("Test"))
+                // Prioritize Page class methods ending in "Async" - these are the parent methods from the fluent chain
+                if (typeName.EndsWith("Page") && methodNameOnly.EndsWith("Async"))
                 {
                     methodName = fullMethodName;
                     fileName = frame.GetFileName() ?? "Unknown";
                     lineNumber = frame.GetFileLineNumber();
-                    
-                    // Prefer methods from Page classes
-                    if (typeName.EndsWith("Page"))
-                    {
-                        break;
-                    }
+                    break; // Found the parent method, stop searching
                 }
-                // If this is the first non-skipped frame, use it as fallback
-                else if (methodName == "Unknown")
+            }
+
+            // Second pass: If we didn't find a Page method, look for any method ending in "Async" or Test class methods
+            if (methodName == "Unknown")
+            {
+                for (int i = 0; i < stackTrace.FrameCount; i++)
                 {
-                    methodName = fullMethodName;
-                    fileName = frame.GetFileName() ?? "Unknown";
-                    lineNumber = frame.GetFileLineNumber();
+                    var frame = stackTrace.GetFrame(i);
+                    if (frame == null) continue;
+
+                    var method = frame.GetMethod();
+                    if (method == null) continue;
+
+                    var declaringType = method.DeclaringType;
+                    if (declaringType == null) continue;
+
+                    var methodNameOnly = method.Name;
+                    var typeName = declaringType.Name;
+                    var fullMethodName = $"{typeName}.{methodNameOnly}";
+
+                    // Skip compiler-generated and wrapper methods
+                    bool shouldSkip = skipPatterns.Any(pattern => 
+                        methodNameOnly.Contains(pattern) || 
+                        typeName.Contains(pattern));
+
+                    if (shouldSkip)
+                    {
+                        continue;
+                    }
+
+                    // Found a real method - check if it's from a page object or test
+                    // Look for methods ending in "Async" or classes ending in "Page" or "Test"
+                    if (methodNameOnly.EndsWith("Async") || 
+                        typeName.EndsWith("Page") || 
+                        typeName.EndsWith("Test"))
+                    {
+                        methodName = fullMethodName;
+                        fileName = frame.GetFileName() ?? "Unknown";
+                        lineNumber = frame.GetFileLineNumber();
+                        
+                        // Prefer methods from Page classes
+                        if (typeName.EndsWith("Page"))
+                        {
+                            break;
+                        }
+                    }
+                    // If this is the first non-skipped frame, use it as fallback
+                    else if (methodName == "Unknown")
+                    {
+                        methodName = fullMethodName;
+                        fileName = frame.GetFileName() ?? "Unknown";
+                        lineNumber = frame.GetFileLineNumber();
+                    }
                 }
             }
 
@@ -181,6 +223,43 @@ namespace VaxCare.Core.Helpers
             {
                 return fileName;
             }
+        }
+
+        /// <summary>
+        /// Formats stack trace lines to include clickable file:// URLs for file paths and line numbers
+        /// </summary>
+        private static string FormatStackTraceWithClickableLinks(string stackTrace)
+        {
+            if (string.IsNullOrEmpty(stackTrace))
+            {
+                return stackTrace;
+            }
+
+            // Pattern to match: "in C:\path\to\file.cs:line 123" or "in /path/to/file.cs:line 123"
+            // Matches: "in " followed by path, then ":line " followed by number
+            var pattern = @"(in\s+)([A-Za-z]:[^:]+|/[^:]+|\.\\[^:]+|\.\/[^:]+):(line\s+)(\d+)";
+            
+            return Regex.Replace(stackTrace, pattern, match =>
+            {
+                try
+                {
+                    string inKeyword = match.Groups[1].Value; // "in "
+                    string filePath = match.Groups[2].Value; // "C:\path\to\file.cs"
+                    string lineKeyword = match.Groups[3].Value; // "line "
+                    string lineNumber = match.Groups[4].Value; // "123"
+
+                    // Format as clickable file:// URL
+                    string clickableUrl = FormatFileUrl(filePath, int.Parse(lineNumber));
+                    
+                    // Return the formatted line with clickable URL
+                    return $"{inKeyword}{clickableUrl} ({lineKeyword}{lineNumber})";
+                }
+                catch
+                {
+                    // If parsing fails, return original match
+                    return match.Value;
+                }
+            }, RegexOptions.Multiline);
         }
     }
 }

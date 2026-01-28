@@ -429,8 +429,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"AddAppointmentToScheduleAsync FAILED for patient {patient.Name}");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"AddAppointmentToScheduleAsync error for patient {patient.Name}", Driver.Driver);
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"AddAppointmentToScheduleAsync failed for patient {patient.Name}", Driver.Driver);
                 throw;
             }
         }
@@ -489,8 +488,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"CreateNewPatientAsync FAILED for patient {patient.FirstName} {patient.LastName}");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"CreateNewPatientAsync error for patient {patient.FirstName} {patient.LastName}", Driver.Driver);
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"CreateNewPatientAsync failed for patient {patient.FirstName} {patient.LastName}", Driver.Driver);
                 throw;
             }
         }
@@ -513,8 +511,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"SelectMatDropdownOptionAsync FAILED while selecting '{option}'");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"SelectMatDropdownOptionAsync error while selecting '{option}'", Driver.Driver);
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"SelectMatDropdownOptionAsync failed while selecting '{option}'", Driver.Driver);
                 throw;
             }
         }
@@ -955,8 +952,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"Failed to change visit type to '{newVisitType}'.");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"ChangeVisitTypeAsync error for visit type '{newVisitType}'", Driver.Driver);
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"ChangeVisitTypeAsync failed for visit type '{newVisitType}'", Driver.Driver);
                 throw;
             }
 
@@ -994,8 +990,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                Log.Error($"Failed to verify visit type '{expectedVisitType}'.");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"VerifyVisitTypeAsync error for visit type '{expectedVisitType}'", Driver.Driver);
+                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"VerifyVisitTypeAsync failed for visit type '{expectedVisitType}'", Driver.Driver);
                 throw;
             }
 
