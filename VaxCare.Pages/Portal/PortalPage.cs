@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core;
@@ -1041,6 +1042,173 @@ namespace VaxCare.Pages.Portal
             catch (Exception ex)
             {
                 ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"VerifyVisitTypeAsync failed for visit type '{expectedVisitType}'", Driver.Driver);
+                throw;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Changes the provider for a patient appointment found by lastName.
+        /// Similar to ChangeVisitTypeForPatientAsync pattern.
+        /// </summary>
+        public async Task<PortalPage> ChangeProviderForPatientAsync(string lastName, string newProviderName)
+        {
+            Log.Step($"Change provider to '{newProviderName}' for patient with last name: {lastName}");
+
+            // Click on the patient appointment to open the patient info modal
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
+
+            // Click the "Edit Appointment" button
+            await Driver.ClickAsync(EditAppointmentButton.Id());
+
+            // Wait for provider field to be available
+            await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
+
+            // Clear existing provider and type new provider last name
+            var providerLastName = newProviderName.Split(' ').Last();
+            Log.Information($"Typing provider last name '{providerLastName}' into provider field");
+            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
+            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
+            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
+            await Task.Delay(3000); // Wait for dropdown options to appear
+
+            // Select the provider option containing the full name
+            var providerOptionXpath = string.Format(ProviderNameInSearch, newProviderName);
+            Log.Information($"Waiting for provider option '{newProviderName}' to appear");
+            await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
+            Log.Information($"Clicking provider option '{newProviderName}'");
+            await Driver.ClickAsync(providerOptionXpath.XPath());
+
+            // Wait for provider to be selected
+            Log.Information("Waiting for provider to be confirmed as selected");
+            await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+            Log.Information($"✓ Successfully selected provider: {newProviderName}");
+
+            // Click "Save"
+            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+
+            Log.Step($"Provider successfully changed to '{newProviderName}'.");
+
+            return this;
+        }
+
+        /// <summary>
+        /// Verifies that the provider name appears in the scheduler grid under the appointment time for a patient.
+        /// </summary>
+        public async Task<PortalPage> VerifyProviderInSchedulerGridAsync(string lastName, string expectedProviderName)
+        {
+            Log.Step($"Verify provider '{expectedProviderName}' appears in scheduler grid for patient {lastName}");
+
+            // Find the patient row
+            var patientRowXpath = string.Format(PatientRowWithLastNameXpath, lastName);
+            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
+
+            // Find the provider element in the row (typically under the appointment time)
+            // Provider is usually in a td with class containing 'provider' or similar
+            var providerElements = patientRow.FindElements(By.XPath(".//td[contains(@class,'provider')]//span | .//td[contains(@class,'provider')]//div"));
+            
+            bool providerFound = false;
+            foreach (var element in providerElements)
+            {
+                var providerText = element.Text.Trim();
+                if (providerText.Contains(expectedProviderName))
+                {
+                    Log.Information($"✓ Provider '{expectedProviderName}' found in scheduler grid: {providerText}");
+                    providerFound = true;
+                    break;
+                }
+            }
+
+            if (!providerFound)
+            {
+                // Try alternative: look for provider text anywhere in the row
+                var rowText = patientRow.Text;
+                if (rowText.Contains(expectedProviderName))
+                {
+                    Log.Information($"✓ Provider '{expectedProviderName}' found in scheduler grid row text");
+                    providerFound = true;
+                }
+            }
+
+            if (!providerFound)
+            {
+                Log.Error($"Provider '{expectedProviderName}' not found in scheduler grid for patient {lastName}");
+                throw new Exception($"Provider verification failed. Expected provider '{expectedProviderName}' not found in scheduler grid.");
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Deletes all appointments/visits for a patient found by lastName.
+        /// Similar to DeleteAppointmentAsync but works with lastName parameter.
+        /// </summary>
+        public async Task<PortalPage> DeleteAllAppointmentsForPatientAsync(string lastName)
+        {
+            Log.Step($"Delete all appointments for patient with last name: {lastName}");
+
+            try
+            {
+                // Base XPath used for this patient's appointments in the grid
+                var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {lastName}, ");
+
+                while (true)
+                {
+                    // Find all current appointments for this patient
+                    var currentAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+
+                    var countBefore = currentAppts.Count;
+                    Log.Information($"Current appointment count for {lastName} before delete iteration: {countBefore}");
+
+                    // No more appointments for this patient – we're done
+                    if (countBefore == 0)
+                    {
+                        Log.Information($"No appointments found for {lastName}. Deletion complete.");
+                        break;
+                    }
+
+                    // Click first appointment for this patient
+                    var patientElement = currentAppts.First();
+                    await Driver.ClickAsync(patientElement);
+
+                    // ClickEditDelete equivalent
+                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                    await Driver.ClickAsync(DeleteButton.Id(), 3);
+                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+                    // Sleep(3000)
+                    await Task.Delay(3000);
+
+                    // Wait for appointment grid to load
+                    await WaitForAppointmentGridToLoadAsync();
+
+                    // Re-check appointment count for this patient after this delete
+                    var remainingAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+                    var countAfter = remainingAppts.Count;
+                    Log.Information($"Appointment count for {lastName} after delete iteration: {countAfter}");
+
+                    if (countAfter >= countBefore)
+                    {
+                        Log.Error($"Appointment count did not decrease after delete iteration. Before: {countBefore}, After: {countAfter}");
+                        // break to avoid infinite loop
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Don't log here - let BaseTest.HandleTestFailureAsync handle error logging
+                // to avoid duplicate error messages
                 throw;
             }
 
