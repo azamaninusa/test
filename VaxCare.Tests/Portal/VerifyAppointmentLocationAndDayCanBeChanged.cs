@@ -27,13 +27,17 @@ namespace VaxCare.Tests.Portal
 
             await RunTestAsync(testDescription, async () =>
             {
-                await _fixture.SetupAsync(Log, user.ClinicId)
-                    .Then(() => _fixture.AddTestPatientAppointment(patientRequest));
+                await _fixture.SetupAsync(Log, user.ClinicId);
 
                 await PageAsync<PortalLogin>(user)
                     .Then(page => page.LoginAsync(url))
                     .Then(page => page.WaitForAppointmentGridToLoadAsync())
                     .Then(page => page.ChangeToDaysInAdvanceAsync(7))
+                    .Then(async page =>
+                    {
+                        await _fixture.AddTestPatientAppointment(patientRequest, 7);
+                        return page;
+                    })
                     .Then(page => page.ChangeLocationOnAppointmentAsync(patient, "QA Two"))
                     .Then(page => page.VerifyPatientIsNotListedAsync())
                     .Then(page => page.ChangeLocationOnPortalAsync("QA Two"))
