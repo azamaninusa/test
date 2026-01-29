@@ -18,8 +18,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<IWebElement> FindElementAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Find Element: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Find Element: {by}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.FindElementAsync(by, timeoutInSeconds));
@@ -32,8 +32,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<List<IWebElement>> FindAllElementsAsync(
             this IWebDriverActor actor, By parentSelector, By childSelector, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Find all child Elements of: {parentSelector}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Find all child Elements of: {parentSelector}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.FindAllElementsAsync(parentSelector, childSelector, timeoutInSeconds));
@@ -46,8 +46,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<List<IWebElement>> FindAllChildElementsAsync(
             this IWebDriverActor actor, IWebElement parent, By childSelector, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Find all child Elements of WebElement: {parent}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Find all child Elements of WebElement: {parent}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.FindAllChildElementsAsync(parent, childSelector, timeoutInSeconds));
@@ -63,8 +63,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task ClickAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Click: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Click: {by}");
 
             await actor.ExecuteAsync(driver =>
                 driver.ClickAsync(by, timeoutInSeconds));
@@ -77,8 +77,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task ClickAsync(
             this IWebDriverActor actor, IWebElement element, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Click: {element}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Click: {element}");
 
             await actor.ExecuteAsync(driver =>
                 driver.ClickAsync(element));
@@ -93,8 +93,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<string> GetTextAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Get Text from Selector: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Get Text from Selector: {by}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.GetTextAsync(by, timeoutInSeconds));
@@ -111,8 +111,8 @@ namespace VaxCare.Core.WebDriver
             if (isPassword)
                 logText = new string('*', text.Length);
 
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Send Text '{logText}' to Selector : {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Send Text '{logText}' to Selector : {by}");
 
             await actor.ExecuteAsync(driver =>
                 driver.SendKeysAsync(by, text, timeoutInSeconds));
@@ -133,8 +133,8 @@ namespace VaxCare.Core.WebDriver
             if (isPassword)
                 logText = new string('*', text.Length);
 
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Send Text '{logText}' to WebDriver Element : {element}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Send Text '{logText}' to WebDriver Element : {element}");
 
             await actor.ExecuteAsync(driver =>
                 driver.SendKeysAsync(element, text));
@@ -149,8 +149,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<bool> ElementExistsAsync(
             this IWebDriverActor actor, By by, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Check if Element Exists: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Check if Element Exists: {by}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.ElementExistsAsync(by));
@@ -163,8 +163,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<bool> IsElementClickableAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Check if Element is Clickable: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Check if Element is Clickable: {by}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.IsElementClickableAsync(by, timeoutInSeconds));
@@ -177,8 +177,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<bool> IsElementPresentAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Check if Element is Present: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Check if Element is Present: {by}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.IsElementPresentAsync(by, timeoutInSeconds));
@@ -191,8 +191,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<bool> IsTextPresentAsync(
             this IWebDriverActor actor, By by, string text, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Check if Text '{text}' Exists in: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Check if Text '{text}' Exists in: {by}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.IsTextPresentAsync(by, text, timeoutInSeconds));
@@ -207,8 +207,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task NavigateAsync(
             this IWebDriverActor actor, string url, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Navigating to {url}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Navigating to {url}");
 
             await actor.ExecuteAsync(driver =>
                 driver.NavigateAsync(url));
@@ -223,8 +223,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task SelectDropDownOptionByValueAsync(
             this IWebDriverActor actor, By by, string optionToSelect, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Select Drop-down Option: {optionToSelect}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Select Drop-down Option: {optionToSelect}");
 
             await actor.ExecuteAsync(driver =>
                 driver.SelectDropDownOptionByValueAsync(by, optionToSelect, timeoutInSeconds));
@@ -237,8 +237,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task SelectDropDownOptionByTextAsync(
             this IWebDriverActor actor, By by, string optionText, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Select Drop-down Option by Text: {optionText}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Select Drop-down Option by Text: {optionText}");
 
             await actor.ExecuteAsync(async driver =>
                 await driver.SelectDropDownOptionByTextAsync(by, optionText, timeoutInSeconds));
@@ -253,8 +253,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task WaitUntilElementLoadsAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Wait up to {timeoutInSeconds}s Until {by} Loads");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Wait up to {timeoutInSeconds}s Until {by} Loads");
 
             await actor.ExecuteAsync(driver =>
                 driver.WaitUntilElementLoadsAsync(by, timeoutInSeconds));
@@ -267,8 +267,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task WaitForElementToDisappearAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Wait up to {timeoutInSeconds} for Element {by} to Disapppear");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Wait up to {timeoutInSeconds} for Element {by} to Disapppear");
 
             await actor.ExecuteAsync(driver =>
                 driver.WaitForElementToDisappearAsync(by, timeoutInSeconds));
@@ -281,8 +281,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task WaitForElementToDisappearAsync(
             this IWebDriverActor actor, IWebElement element, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Wait up to {timeoutInSeconds} for Element {element} to Disapppear");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Wait up to {timeoutInSeconds} for Element {element} to Disapppear");
 
             await actor.ExecuteAsync(driver =>
                 driver.WaitForElementToDisappearAsync(element, timeoutInSeconds));
@@ -295,8 +295,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task WaitForAlertAndDismissAsync(
             this IWebDriverActor actor, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Wait up to {timeoutInSeconds} for Alert and then Dismiss it.");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Wait up to {timeoutInSeconds} for Alert and then Dismiss it.");
 
             await actor.ExecuteAsync(driver =>
                 driver.WaitForAlertAndDismissAsync(timeoutInSeconds));
@@ -311,8 +311,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task ExecuteJavaScriptClickAsync(
             this IWebDriverActor actor, By by, int timeoutInSeconds = 10, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Execute JavaScript Click: {by}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Execute JavaScript Click: {by}");
 
             await actor.ExecuteAsync(driver =>
                 driver.ExecuteJavaScriptClickAsync(by, timeoutInSeconds));
@@ -325,8 +325,8 @@ namespace VaxCare.Core.WebDriver
         public static async Task<string> GetCssValueAsync(
             this IWebDriverActor actor, IWebElement element, string propertyName, bool shouldLog = true)
         {
-            if (shouldLog && actor is WebDriverActor wda && wda._logger != null)
-                wda._logger.Information($"Get CSS Value '{propertyName}' from Element: {element}");
+            if (shouldLog && actor._logger != null)
+                actor._logger.Information($"Get CSS Value '{propertyName}' from Element: {element}");
 
             return await actor.ExecuteAsync(driver =>
                 driver.GetCssValueAsync(element, propertyName));

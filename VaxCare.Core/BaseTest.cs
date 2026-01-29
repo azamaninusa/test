@@ -5,6 +5,7 @@ using OpenQA.Selenium;
 using Serilog;
 using VaxCare.Core.Helpers;
 using VaxCare.Core.Logger;
+using VaxCare.Core.ServiceCollections;
 using VaxCare.Core.WebDriver;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,7 +14,7 @@ namespace VaxCare.Core
 {
     public abstract class BaseTest : IAsyncLifetime
     {
-        protected IServiceProvider Services;
+        protected IServiceProvider Services { get; private set; }
         private IServiceScope _scope;
         private IWebDriverBuilder _driverBuilder;
         private ILoggerBuilder _loggerBuilder;
@@ -22,12 +23,13 @@ namespace VaxCare.Core
         private string? _currentTestName;
         protected IWebDriver Driver { get; private set; }
         protected ILogger Log { get; private set; }
+        protected IWebDriverActor WebDriverActor { get; private set; }
 
         public BaseTest(ITestOutputHelper output)
         {
             _output = output;
-            var startup = new TestStartup();
-            _scope = startup.Services.CreateScope();
+            var testServices = new TestServices();
+            _scope = testServices.Services.CreateScope();
             Services = _scope.ServiceProvider;
         }
 
@@ -44,6 +46,7 @@ namespace VaxCare.Core
             }
 
             Driver = _driverBuilder.WithBrowser().WithArguments().Build();
+            WebDriverActor = new WebDriverActor(Driver, Log);
             Log.Information("Webdriver created");
             await Task.CompletedTask;
         }
@@ -65,9 +68,8 @@ namespace VaxCare.Core
         // TODO Refactor and remove constructorArgs
         protected T Page<T>(params object[] args) where T : BasePage
         {
-            var webDriverActor = new WebDriverActor(Driver, Log);
-            var constructorArgs = new object[] { webDriverActor, Log }.Concat(args).ToArray();
-            return (T)Activator.CreateInstance(typeof(T), webDriverActor, Log)!;
+            var constructorArgs = new object[] { WebDriverActor, Log }.Concat(args).ToArray();
+            return (T)Activator.CreateInstance(typeof(T), WebDriverActor, Log)!;
         }
 
         // Allows for a new page to be instantiated allowing for the page to be initialized first!
