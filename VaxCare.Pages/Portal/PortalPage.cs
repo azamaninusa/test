@@ -70,6 +70,7 @@ namespace VaxCare.Pages.Portal
         private const string LinkWithText = "//a[contains(text(),'{0}')]";
         // XPath to find patient with appointment time: finds div with patient name, then following sibling with appointment time
         private const string PatientWithApptTimeAndNameXpath = "//div[@id='table-container']//tr//div[text()='{0}']/ancestor::td[contains(@class,'column-patientname')]/following-sibling::td[contains(@class,'appointmenttime')]/span[text()='{1}']";
+        private const string ProviderXpath = PatientWithApptTimeAndNameXpath + "/following-sibling::div[contains(@class,'provider')]";
         private const string PatientRowWithLastNameXpath = "//div[@id='table-container']//tr//div[text()=' {0}, ']/ancestor::tr[contains(@class,'appt-row')]";
         private const string AppointmentTimeSpanXpath = ".//td[contains(@class,'appointmenttime')]//span";
         private const string PatientAppointmentOnSchedulerXpath = "//tbody[contains(@class,'ng-tns')]/tr//div[contains(@class,'patientname')]/div[text()='{0}']";
@@ -1097,49 +1098,39 @@ namespace VaxCare.Pages.Portal
         }
 
         /// <summary>
-        /// Verifies that the provider name appears in the scheduler grid under the appointment time for a patient.
+        /// Verifies that the provider name appears in the scheduler grid for the patient's appointment.
+        /// Matches legacy: use PatientWithApptTimeAndNameXpath + provider cell, with appointment time from the row.
         /// </summary>
         public async Task<PortalPage> VerifyProviderInSchedulerGridAsync(string lastName, string expectedProviderName)
         {
             Log.Step($"Verify provider '{expectedProviderName}' appears in scheduler grid for patient {lastName}");
 
-            // Find the patient row
+            var patientNameInGrid = $" {lastName}, ";
             var patientRowXpath = string.Format(PatientRowWithLastNameXpath, lastName);
             var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
 
-            // Find the provider element in the row (typically under the appointment time)
-            // Provider is usually in a td with class containing 'provider' or similar
-            var providerElements = patientRow.FindElements(By.XPath(".//td[contains(@class,'provider')]//span | .//td[contains(@class,'provider')]//div"));
-            
-            bool providerFound = false;
-            foreach (var element in providerElements)
+            // Get appointment time from the row (legacy uses this for ProviderXpath)
+            var timeSpans = patientRow.FindElements(By.XPath(AppointmentTimeSpanXpath));
+            if (timeSpans.Count == 0)
             {
-                var providerText = element.Text.Trim();
-                if (providerText.Contains(expectedProviderName))
-                {
-                    Log.Information($"✓ Provider '{expectedProviderName}' found in scheduler grid: {providerText}");
-                    providerFound = true;
-                    break;
-                }
+                Log.Error($"No appointment time found in row for patient {lastName}");
+                throw new Exception($"Provider verification failed: no appointment time in row for patient {lastName}.");
+            }
+            var appointmentTimeText = timeSpans[0].Text.Trim();
+            var appointmentTimeFormatted = $" {appointmentTimeText} ";
+
+            // Legacy: CompareStringValues(newProvidername, GetTextFromElement(ProviderXpath, ...))
+            var providerXpath = string.Format(ProviderXpath, patientNameInGrid, appointmentTimeFormatted);
+            var providerElement = await Driver.FindElementAsync(providerXpath.XPath(), 15);
+            var actualProviderText = providerElement.Text.Trim();
+
+            if (!actualProviderText.Contains(expectedProviderName))
+            {
+                Log.Error($"Provider in grid is '{actualProviderText}', expected to contain '{expectedProviderName}' for patient {lastName}");
+                throw new Exception($"Provider verification failed. Expected provider '{expectedProviderName}' but grid shows '{actualProviderText}'.");
             }
 
-            if (!providerFound)
-            {
-                // Try alternative: look for provider text anywhere in the row
-                var rowText = patientRow.Text;
-                if (rowText.Contains(expectedProviderName))
-                {
-                    Log.Information($"✓ Provider '{expectedProviderName}' found in scheduler grid row text");
-                    providerFound = true;
-                }
-            }
-
-            if (!providerFound)
-            {
-                Log.Error($"Provider '{expectedProviderName}' not found in scheduler grid for patient {lastName}");
-                throw new Exception($"Provider verification failed. Expected provider '{expectedProviderName}' not found in scheduler grid.");
-            }
-
+            Log.Information($"✓ Provider '{expectedProviderName}' verified in scheduler grid: {actualProviderText}");
             return this;
         }
 
