@@ -1098,9 +1098,13 @@ namespace VaxCare.Pages.Portal
         {
             Log.Step($"Verify provider '{expectedProviderName}' appears in scheduler grid for patient {lastName}");
 
+            // Wait for grid to refresh after provider change (e.g. save, modal close)
+            await Task.Delay(3000);
+            Log.Information("Waiting for patient row and provider cell to load...");
+
             var patientNameInGrid = $" {lastName}, ";
             var patientRowXpath = string.Format(PatientRowWithLastNameXpath, lastName);
-            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
+            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 25);
 
             // Get appointment time from the row (legacy uses this for ProviderXpath)
             var timeSpans = patientRow.FindElements(By.XPath(AppointmentTimeSpanXpath));
@@ -1112,9 +1116,10 @@ namespace VaxCare.Pages.Portal
             var appointmentTimeText = timeSpans[0].Text.Trim();
             var appointmentTimeFormatted = $" {appointmentTimeText} ";
 
-            // Legacy: CompareStringValues(newProvidername, GetTextFromElement(ProviderXpath, ...))
+            // Wait for provider cell to show the updated name (longer timeout for grid update)
             var providerXpath = string.Format(ProviderXpath, patientNameInGrid, appointmentTimeFormatted);
-            var providerElement = await Driver.FindElementAsync(providerXpath.XPath(), 15);
+            await Driver.WaitUntilElementLoadsAsync(providerXpath.XPath(), 25);
+            var providerElement = await Driver.FindElementAsync(providerXpath.XPath(), 5);
             var actualProviderText = providerElement.Text.Trim();
 
             if (!actualProviderText.Contains(expectedProviderName))

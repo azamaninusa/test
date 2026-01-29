@@ -79,7 +79,8 @@ namespace VaxCare.Core
         }
 
         // Test Runner wrapper with retry logic (up to 3 attempts).
-        // On retry: kill the browser, start a new session, then run the failed test from the beginning.
+        // Only retries when testBody() fails. On retry: kill browser, start new session, run test from the beginning.
+        // Success handling (e.g. Teams notification) runs once after testBody() succeeds; if it throws we do not retry.
         protected async Task RunTestAsync(string testName, Func<Task> testBody)
         {
             const int maxRetries = 3;
@@ -103,8 +104,8 @@ namespace VaxCare.Core
                     }
 
                     await testBody();
-                    await HandleTestSuccessAsync(testName);
-                    return; // Test succeeded, exit retry loop
+                    // Test passed - exit retry loop. Do not run success handling inside loop so we only run testBody() once on pass.
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -114,12 +115,10 @@ namespace VaxCare.Core
                     {
                         Log.Warning($"Test failed on attempt {attempt}/{maxRetries}. Will kill browser and retry from beginning.");
                         Log.Warning($"Exception: {ex.Message}");
-                        // Brief delay before next attempt (browser will be killed and recreated at start of next attempt)
                         await Task.Delay(1000 * attempt);
                     }
                     else
                     {
-                        // Final attempt failed - log and throw
                         Log.Error($"Test failed after {maxRetries} attempts.");
                         await HandleTestFailureAsync(ex, testName, $"Failed after {maxRetries} attempts");
                         throw;
@@ -127,11 +126,8 @@ namespace VaxCare.Core
                 }
             }
 
-            // This should never be reached, but just in case
-            if (lastException != null)
-            {
-                throw lastException;
-            }
+            // Test succeeded (we broke out of the loop). Run success handling once.
+            await HandleTestSuccessAsync(testName);
         }
 
         /// <summary>
