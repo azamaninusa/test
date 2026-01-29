@@ -80,8 +80,13 @@ namespace VaxCare.Pages.Portal
         private const string AppointmentTimeSpanXpath = ".//td[contains(@class,'appointmenttime')]//span";
         private const string PatientAppointmentOnSchedulerXpath = "//tbody[contains(@class,'ng-tns')]/tr//div[contains(@class,'patientname')]/div[text()='{0}']";
 
-        private const string LoadingIcon = "app-loading-image";
-        private const string DatePicker = "datepickerTitle";
+        // Logout: user dropdown (e.g. "Hi QA"), Log Out button, Partner Log In screen
+        private const string UserDropdownButton = "//app-user-option//button";
+        private const string LogOutButton = "//button[text()='Log Out']";
+        private const string PartnerLogInScreenUsernameField = "idp-discovery-username";
+
+        private const string LoadingIcon = "app-loading-image";
+        private const string DatePicker = "datepickerTitle";
         private const string RunMedDButton = "run-med-d";
         private const string EditPaymentInfoButton = "save";
 
@@ -1129,6 +1134,33 @@ namespace VaxCare.Pages.Portal
             }
 
             Log.Information($"✓ Provider '{expectedProviderName}' verified in scheduler grid: {actualProviderText}");
+            return this;
+        }
+
+        /// <summary>
+        /// Clicks the user dropdown (e.g. "Hi QA") and then "Log Out".
+        /// </summary>
+        public async Task<PortalPage> LogoutAsync()
+        {
+            Log.Step("Click the user dropdown (e.g. Hi QA).");
+            await Driver.WaitUntilElementLoadsAsync(UserDropdownButton.XPath(), 15);
+            await Driver.ClickAsync(UserDropdownButton.XPath());
+
+            Log.Step("Click 'Log Out'.");
+            await Driver.WaitUntilElementLoadsAsync(LogOutButton.XPath(), 10);
+            await Driver.ClickAsync(LogOutButton.XPath());
+
+            return this;
+        }
+
+        /// <summary>
+        /// Verifies that the Partner Log In screen is displayed (e.g. Okta discovery username field is present).
+        /// </summary>
+        public async Task<PortalPage> VerifyOnPartnerLogInScreenAsync()
+        {
+            Log.Step("Verify you land on the Partner Log In screen.");
+            await Driver.WaitUntilElementLoadsAsync(PartnerLogInScreenUsernameField.Id(), 15);
+            Log.Information("✓ Partner Log In screen is displayed (username field present).");
             return this;
         }
 
