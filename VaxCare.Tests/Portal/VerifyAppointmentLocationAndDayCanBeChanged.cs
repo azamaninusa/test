@@ -23,7 +23,7 @@ namespace VaxCare.Tests.Portal
         {
             var user = await _fixture.GetUserAsync(userName);
             var patientRequest = await _fixture.GetPatientRequestAsync(testPatient);
-            var patient = await _fixture.GetTestPatientAsync(testPatient);
+            var lastName = patientRequest.NewPatient.LastName;
 
             await RunTestAsync(testDescription, async () =>
             {
@@ -38,7 +38,8 @@ namespace VaxCare.Tests.Portal
                         await _fixture.AddTestPatientAppointment(patientRequest, 7);
                         return page;
                     })
-                    .Then(page => page.ChangeLocationOnAppointmentAsync(patient, "QA Two"))
+                    .Then(page => page.WaitForAppointmentGridToLoadAsync())
+                    .Then(page => page.ChangeLocationOnAppointmentAsync(lastName, "QA Two"))
                     .Then(page => page.VerifyPatientIsNotListedAsync())
                     .Then(page => page.ChangeLocationOnPortalAsync("QA Two"))
                     .Then(page => page.ChangeToDaysInAdvanceAsync(7))

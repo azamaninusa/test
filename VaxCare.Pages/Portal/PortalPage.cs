@@ -707,24 +707,22 @@ namespace VaxCare.Pages.Portal
             return this;
         }
 
-        public async Task<PortalPage> ChangeLocationOnAppointmentAsync(TestPatient patient, string newLocation)
+        /// <summary>
+        /// Changes the clinic/location on the appointment for the patient found by lastName.
+        /// Same pattern as ChangeVisitTypeForPatientAsync(lastName, newVisitType).
+        /// </summary>
+        public async Task<PortalPage> ChangeLocationOnAppointmentAsync(string lastName, string newLocation)
         {
-            // Mimic Portal2Schedule.ChangeLocationOnAppointment:
-            // 1. Click the patient's row
-            // 2. Open Edit Appointment
-            // 3. Open the clinic/location dropdown
-            // 4. Select the new location
-            // 5. Save and wait for the grid to reload
+            Log.Step($"Change location on appointment for patient with last name '{lastName}' to '{newLocation}'.");
 
-            Log.Step($"Change location on appointment for {patient.Name} to '{newLocation}'.");
+            // Set _currentPatient so downstream steps (VerifyPatientIsNotListedAsync, VerifyPatientAppointmentExistsAsync, ChangeDateOnAppointmentAsync) work.
+            _currentPatient = new TestPatient { LastName = lastName, FirstName = "" };
 
-            // Click the patient's row (row contains the patient's name)
-            var patientRowSelector = string.Format(DivWithText, $" {patient.LastName}, ");
-            await Driver.WaitUntilElementLoadsAsync(patientRowSelector.XPath(), 15);
-            await Driver.ClickAsync(patientRowSelector.XPath());
+            // Find and click the patient by lastName (same pattern as ChangeVisitTypeForPatientAsync)
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
 
             // Open Edit Appointment
-            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
             await Driver.ClickAsync(EditAppointmentButton.Id());
 
             // Open the clinic/location dropdown (wait to avoid timing issues)
