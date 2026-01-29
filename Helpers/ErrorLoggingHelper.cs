@@ -33,7 +33,11 @@ namespace VaxCare.Core.Helpers
             // Log all error details
             logger.Error(ex, errorMessage);
             logger.Error($"Failed Method: {methodName}");
-            logger.Error($"Failed Location: {clickableFileUrl} (line {lineNumber})");
+            // Only log location if we have valid file information
+            if (clickableFileUrl != "N/A" && lineNumber > 0)
+            {
+                logger.Error($"Failed Location: {clickableFileUrl} (line {lineNumber})");
+            }
             logger.Error($"Current URL: {currentUrl}");
             logger.Error($"Exception Type: {ex.GetType().Name}");
             logger.Error($"Exception Message: {ex.Message}");

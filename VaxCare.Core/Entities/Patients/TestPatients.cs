@@ -23,7 +23,7 @@ namespace VaxCare.Core.Entities.Patients
         public string Product { get; set; } = string.Empty;
         public string ExpectedProductPrice { get; set; } = string.Empty;
 
-        // Legacy Properties. TODO: Delete them if not needed
+        // Properties retained for compatibility.
 
         public string EligibilityMessage { get; set; } = string.Empty;
         public string PatientRespHeader { get; set; } = string.Empty;

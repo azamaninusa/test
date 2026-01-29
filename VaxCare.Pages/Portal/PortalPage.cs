@@ -154,9 +154,9 @@ namespace VaxCare.Pages.Portal
             Log.Step("Step: Wait for appointment grid to load.");
             await Driver.WaitForElementToDisappearAsync(LoadingIcon.ClassName(), timeout);
             await Driver.WaitUntilElementLoadsAsync(DatePicker.ClassName(), timeout);
-            // This ensures that Appt grid has loaded completely after deleting an appt (matching legacy)
+            // This ensures that Appt grid has loaded completely after deleting an appt (matching behavior)
             await Driver.WaitUntilElementLoadsAsync(AppointmentGridLoadedXpath.XPath(), timeout);
-            // Match legacy behavior: give UI extra time to settle after grid load
+            // Match behavior: give UI extra time to settle after grid load
             await Task.Delay(3000);
             //await Driver.CheckBrowserConsoleErrorsAsync(Log);
             return this;
@@ -359,7 +359,7 @@ namespace VaxCare.Pages.Portal
                     Log.Information($"✓ Successfully searched for patient: {patient.Name}");
                 }
 
-                // Check if provider field is empty (match legacy behavior)
+                // Check if provider field is empty (match behavior)
                 Log.Information("Step 3: Checking provider field value");
                 await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id());
                 var providerValue = await Driver.FindElementAsync(ProviderTextBoxId.Id());
@@ -373,7 +373,7 @@ namespace VaxCare.Pages.Portal
                     var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris"
                     Log.Information($"Typing provider last name '{providerLastName}' into provider field");
                     await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
-                    await Task.Delay(3000); // Match legacy Sleep(3000)
+                    await Task.Delay(3000); // Match Sleep(3000)
                     Log.Information("✓ Typed provider last name, waiting for dropdown options");
                     
                     // Select the provider option containing the full name
@@ -383,7 +383,7 @@ namespace VaxCare.Pages.Portal
                     Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
                     await Driver.ClickAsync(providerOptionXpath.XPath());
                     
-                    // Wait for provider to be selected (match legacy WaitForElementToAppear)
+                    // Wait for provider to be selected (match WaitForElementToAppear)
                     Log.Information("Waiting for provider to be confirmed as selected");
                     await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
                     Log.Information($"✓ Successfully selected provider: {NewlyCreatedPatientProvider}");
@@ -393,8 +393,8 @@ namespace VaxCare.Pages.Portal
                     Log.Information($"Step 4: Provider field already has value '{providerValueAttribute}', skipping provider selection");
                 }
 
-                // Match legacy behavior: wait after provider selection before clicking Add button
-                Log.Information("Step 5: Waiting for UI to settle after provider selection (matching legacy Sleep(3000))");
+                // Match behavior: wait after provider selection before clicking Add button
+                Log.Information("Step 5: Waiting for UI to settle after provider selection (matching Sleep(3000))");
                 await Task.Delay(3000);
                 Log.Information("✓ UI settled");
 
@@ -545,16 +545,16 @@ namespace VaxCare.Pages.Portal
             return this;
         }
 
-        public async Task<PortalPage> DeleteTrackedPatientVisitAsync(PortalTestFixture fixture)
-        {
-            return await Task.Run(() =>
-            {
-                fixture.PatientVisitIds.Clear();
-                return this;
-            });
-        }
+        public async Task<PortalPage> DeleteTrackedPatientVisitAsync(PortalTestFixture fixture)
+        {
+            return await Task.Run(() =>
+            {
+                fixture.PatientVisitIds.Clear();
+                return this;
+            });
+        }
 
-        public async Task<PortalPage> SchedulerSearchForPatientAsync(string patientName)
+        public async Task<PortalPage> SchedulerSearchForPatientAsync(string patientName)
         {
             await Driver.ClickAsync(string.Format(LinkWithText, "Find a Patient").XPath());
             await Driver.SendKeysAsync(SearchPatientTextBox.Id(), patientName);
@@ -591,7 +591,7 @@ namespace VaxCare.Pages.Portal
 
         /// <summary>
         /// Gets the count of patient appointments matching the current patient's last name and appointment time.
-        /// Matches legacy GetPatientAppointmentsCount behavior.
+        /// Matches GetPatientAppointmentsCount behavior.
         /// </summary>
         private async Task<int> GetPatientAppointmentsCountAsync()
         {
@@ -636,7 +636,7 @@ namespace VaxCare.Pages.Portal
 
         /// <summary>
         /// Deletes all appointments/visits in the schedule table before check-in.
-        /// Matches legacy DeleteAllAppointments() implementation exactly.
+        /// Matches DeleteAllAppointments() implementation exactly.
         /// </summary>
         public async Task<PortalPage> DeleteAllPatientAppointmentsAsync(TestPatient? patient = null)
         {
@@ -702,14 +702,14 @@ namespace VaxCare.Pages.Portal
             _currentPatient = patient;
 
             // Use existing helper to add an appointment for this patient.
-            // We create the patient via UI to match legacy behavior.
+            // We create the patient via UI to match behavior.
             await AddAppointmentToScheduleAsync(patient, createNewPatient: true);
             return this;
         }
 
         public async Task<PortalPage> ChangeLocationOnAppointmentAsync(TestPatient patient, string newLocation)
         {
-            // Mimic legacy Portal2Schedule.ChangeLocationOnAppointment:
+            // Mimic Portal2Schedule.ChangeLocationOnAppointment:
             // 1. Click the patient's row
             // 2. Open Edit Appointment
             // 3. Open the clinic/location dropdown
@@ -746,7 +746,7 @@ namespace VaxCare.Pages.Portal
 
         public async Task<PortalPage> ChangeLocationOnPortalAsync(string newLocation)
         {
-            // Mimic legacy Portal2Schedule.ChangeLocationOnPortal:
+            // Mimic Portal2Schedule.ChangeLocationOnPortal:
             // 1. Open the clinic selector dropdown
             // 2. Type the clinic/location name into the search box
             // 3. Select the matching option
@@ -786,7 +786,7 @@ namespace VaxCare.Pages.Portal
             int totalAppts = await GetPatientAppointmentsCountAsync();
             Log.Information($"Appointment count before date change: {totalAppts}");
 
-            // Click first appointment in list (matching legacy appointments[0].Click())
+            // Click first appointment in list (matching appointments[0].Click())
             var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime ?? "");
             var firstAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 15);
             await Driver.ClickAsync(firstAppointment);
@@ -794,7 +794,7 @@ namespace VaxCare.Pages.Portal
             // Edit appointment
             await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
 
-            // Calculate new date using stored appointmentDate (matching legacy)
+            // Calculate new date using stored appointmentDate (matching behavior)
             string newAppointmentDateString = _appointmentDate.AddDays(numberOfDays).ToString("M/d/yyyy");
             await Driver.ClickAsync(DatePickerInput.Id());
             await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
@@ -828,7 +828,7 @@ namespace VaxCare.Pages.Portal
 
             try
             {
-                // Legacy DeleteAppointment deletes one appointment; here we keep deleting
+                // DeleteAppointment deletes one appointment; here we keep deleting
                 // for the current patient until no appointments remain for that patient.
 
                 // Base XPath used for this patient's appointments in the grid
@@ -882,10 +882,10 @@ namespace VaxCare.Pages.Portal
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Log.Error("The patient wasn't deleted. The patient shouldn't be seen after deleting.");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, "DeleteAppointmentAsync error", Driver.Driver);
+                // Don't log here - let BaseTest.HandleTestFailureAsync handle error logging
+                // to avoid duplicate error messages
                 throw;
             }
 
@@ -900,7 +900,7 @@ namespace VaxCare.Pages.Portal
                 return this;
             }
 
-            // Match legacy behavior: format XPath with patient last name and appointment time
+            // Match behavior: format XPath with patient last name and appointment time
             // First, get the appointment time from the schedule for this patient
             var patientNameOnSchedule = $" {_currentPatient.LastName}, {_currentPatient.FirstName} ";
             
@@ -908,14 +908,14 @@ namespace VaxCare.Pages.Portal
             var patientRowXpath = string.Format(PatientRowWithLastNameXpath, _currentPatient.LastName);
             var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
             
-            // Extract appointment time from the row and store it (matching legacy AppointmentTime field)
+            // Extract appointment time from the row and store it (matching AppointmentTime field)
             var appointmentTimeSpan = patientRow.FindElement(By.XPath(AppointmentTimeSpanXpath));
             _appointmentTime = " " + appointmentTimeSpan.Text.Trim() + " ";
             
             // Format XPath matching legacy: PatientWithApptTimeAndNameXpath with patient last name and appointment time
             var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
             
-            // Wait for element to appear (matching legacy WaitForElementToAppear)
+            // Wait for element to appear (matching WaitForElementToAppear)
             Log.Step($"{patientNameOnSchedule} scheduled for {_appointmentTime}");
             await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
 
@@ -955,7 +955,7 @@ namespace VaxCare.Pages.Portal
 
             // Verify 'Well' is selected by default in the 'Visit Type' dropdown
             await Driver.WaitUntilElementLoadsAsync(VisitTypeWellXpath.XPath(), 15);
-            await Task.Delay(1000); // Matching legacy Sleep(1000)
+            await Task.Delay(1000); // Matching Sleep(1000)
 
             // Open the Visit Type dropdown
             await Driver.WaitUntilElementLoadsAsync(VisitTypeDropdownArrow.XPath(), 15);
@@ -1009,74 +1009,6 @@ namespace VaxCare.Pages.Portal
         }
 
         /// <summary>
-        /// <summary>
-        /// Changes the visit type for the current patient's appointment.
-        /// Matches legacy ChangeVisitType behavior from Portal2SchedulePage.
-        /// </summary>
-        public async Task<PortalPage> ChangeVisitTypeAsync(string newVisitType)
-        {
-            if (_currentPatient == null)
-            {
-                Log.Warning("ChangeVisitTypeAsync called before CheckInPatientAsync; skipping visit type change.");
-                return this;
-            }
-
-            try
-            {
-                Log.Step($"Change visit type to '{newVisitType}' for patient {_currentPatient.Name}.");
-
-                // Legacy: Verify existing appointment and that initial visit type is "Well Visit"
-                await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
-                var initialVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
-                Log.Information($"Initial visit type: {initialVisitType}");
-
-                // Step 1 (legacy): Click Edit Appointment
-                await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
-                await Driver.ClickAsync(EditAppointmentButton.Id());
-
-                // Step 2 (legacy): Verify 'Well' is selected by default in the 'Visit Type' dropdown
-                await Driver.WaitUntilElementLoadsAsync(VisitTypeWellXpath.XPath(), 15);
-                await Task.Delay(1000); // Matching legacy Sleep(1000)
-
-                // Step 3 (legacy): Open the Visit Type dropdown
-                await Driver.WaitUntilElementLoadsAsync(VisitTypeDropdownArrow.XPath(), 15);
-                await Driver.ClickAsync(VisitTypeDropdownArrow.XPath());
-
-                // Step 4 (legacy): Select the new visit type (e.g., 'Sick')
-                var visitTypeOptionXpath = string.Format(VisitTypeOption, newVisitType);
-                await Driver.WaitUntilElementLoadsAsync(visitTypeOptionXpath.XPath(), 15);
-                var visitTypeOption = await Driver.FindElementAsync(visitTypeOptionXpath.XPath(), 15);
-                await Driver.ClickAsync(visitTypeOption);
-
-                // Step 5 (legacy): Save and close the modal
-                await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
-                await Driver.ClickAsync(PatientInfoSaveButton.XPath());
-                await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
-
-                // Step 6 (legacy): Re-verify the appointment exists and visit type updated
-                await VerifyPatientAppointmentExistsAsync(true);
-
-                await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
-                var updatedVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
-                var expectedVisitType = $"{newVisitType} Visit";
-
-                if (updatedVisitType != expectedVisitType)
-                {
-                    Log.Error($"Visit type did not update correctly. Expected: {expectedVisitType}, Actual: {updatedVisitType}");
-                    throw new Exception($"Visit type verification failed. Expected: {expectedVisitType}, Actual: {updatedVisitType}");
-                }
-
-                Log.Step($"Visit type successfully changed to '{updatedVisitType}'.");
-            }
-            catch (Exception ex)
-            {
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"ChangeVisitTypeAsync failed for visit type '{newVisitType}'", Driver.Driver);
-                throw;
-            }
-
-            return this;
-        }
-
         /// <summary>
         /// Verifies the visit type displayed in the patient information modal.
         /// </summary>
