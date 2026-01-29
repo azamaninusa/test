@@ -48,6 +48,8 @@ namespace VaxCare.Pages.Portal
         // Legacy: SelectProvider uses "//span[@class='mat-option-text' and contains(text(),'{0}')]" with full provider name
         private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
         private const string ProviderOptionMatOptionText = "//span[@class='mat-option-text' and contains(text(),'{0}')]";
+        /// <summary>Provider option inside the open dropdown overlay (avoids matching wrong element when field has placeholder text).</summary>
+        private const string ProviderOptionInOverlay = "//div[contains(@id,'cdk-overlay')]//span[@class='mat-option-text' and contains(text(),'{0}')]";
         private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
         private const string ProviderSelected = "//input[@id='provider' and @aria-invalid='false']";
         /// <summary>Provider name for new appointments. From legacy Portal2SchedulePage NewlyCreatedPatientProvider.</summary>
@@ -364,39 +366,27 @@ namespace VaxCare.Pages.Portal
                     Log.Information($"✓ Successfully searched for patient: {patient.Name}");
                 }
 
-                // Check if provider field is empty (match behavior)
-                Log.Information("Step 3: Checking provider field value");
-                await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id());
-                var providerValue = await Driver.FindElementAsync(ProviderTextBoxId.Id());
-                var providerValueAttribute = providerValue?.GetAttribute("value") ?? string.Empty;
-                Log.Information($"Provider field current value: '{(string.IsNullOrEmpty(providerValueAttribute) ? "(empty)" : providerValueAttribute)}'");
-
-                if (string.IsNullOrEmpty(providerValueAttribute))
-                {
-                    Log.Information("Step 4: Provider field is empty, selecting provider");
-                    // Match legacy SelectProvider behavior: type last name, then select full name
-                    var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris"
-                    Log.Information($"Typing provider last name '{providerLastName}' into provider field");
-                    await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
-                    await Task.Delay(3000); // Match Sleep(3000)
-                    Log.Information("✓ Typed provider last name, waiting for dropdown options");
-                    
-                    // Legacy: Click("//span[@class='mat-option-text' and contains(text(),'{0}')]", Provider)
-                    var providerOptionXpath = string.Format(ProviderOptionMatOptionText, NewlyCreatedPatientProvider);
-                    Log.Information($"Waiting for provider option '{NewlyCreatedPatientProvider}' to appear");
-                    await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
-                    Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
-                    await Driver.ClickAsync(providerOptionXpath.XPath());
-                    
-                    // Wait for provider to be selected (match WaitForElementToAppear)
-                    Log.Information("Waiting for provider to be confirmed as selected");
-                    await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
-                    Log.Information($"✓ Successfully selected provider: {NewlyCreatedPatientProvider}");
-                }
-                else
-                {
-                    Log.Information($"Step 4: Provider field already has value '{providerValueAttribute}', skipping provider selection");
-                }
+                // Select provider from dropdown: click field to open, clear any placeholder (e.g. "Qa Automation"), type and select "Dean Morris"
+                Log.Information("Step 3: Selecting provider from dropdown");
+                await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
+                await Driver.ClickAsync(ProviderTextBoxId.Id());
+                await Task.Delay(500);
+                // Clear any existing/placeholder text so we don't append (e.g. "Qa Automation" + "Morris" -> "Qa AutomationDean Morris")
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
+                var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris" for "Dean Morris"
+                Log.Information($"Typing provider last name '{providerLastName}' (selecting {NewlyCreatedPatientProvider})");
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
+                await Task.Delay(3000); // Match legacy Sleep(3000) for dropdown to open/filter
+                // Click the option inside the open overlay so we select "Dean Morris" from the dropdown
+                var providerOptionXpath = string.Format(ProviderOptionInOverlay, NewlyCreatedPatientProvider);
+                Log.Information($"Waiting for provider option '{NewlyCreatedPatientProvider}' in dropdown");
+                await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
+                Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
+                await Driver.ClickAsync(providerOptionXpath.XPath());
+                Log.Information("Waiting for provider to be confirmed as selected");
+                await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+                Log.Information($"✓ Successfully selected provider: {NewlyCreatedPatientProvider}");
 
                 // Match behavior: wait after provider selection before clicking Add button
                 Log.Information("Step 5: Waiting for UI to settle after provider selection (matching Sleep(3000))");
@@ -1067,20 +1057,20 @@ namespace VaxCare.Pages.Portal
             // Click the "Edit Appointment" button
             await Driver.ClickAsync(EditAppointmentButton.Id());
 
-            // Wait for provider field to be available
+            // Wait for provider field, click to open dropdown, clear, type and select from dropdown
             await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
-
-            // Clear existing provider and type new provider last name
+            await Driver.ClickAsync(ProviderTextBoxId.Id());
+            await Task.Delay(500);
             var providerLastName = newProviderName.Split(' ').Last();
-            Log.Information($"Typing provider last name '{providerLastName}' into provider field");
+            Log.Information($"Clearing and typing provider last name '{providerLastName}' (selecting {newProviderName})");
             await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
             await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
             await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
             await Task.Delay(3000); // Wait for dropdown options to appear
 
-            // Legacy: same selector as SelectProvider - mat-option-text with full name
-            var providerOptionXpath = string.Format(ProviderOptionMatOptionText, newProviderName);
-            Log.Information($"Waiting for provider option '{newProviderName}' to appear");
+            // Click the option inside the open overlay
+            var providerOptionXpath = string.Format(ProviderOptionInOverlay, newProviderName);
+            Log.Information($"Waiting for provider option '{newProviderName}' in dropdown");
             await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
             Log.Information($"Clicking provider option '{newProviderName}'");
             await Driver.ClickAsync(providerOptionXpath.XPath());
