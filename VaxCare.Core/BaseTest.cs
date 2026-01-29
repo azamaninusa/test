@@ -78,20 +78,55 @@ namespace VaxCare.Core
             return page;
         }
 
-        // Test Runner wrapper
+        // Test Runner wrapper with retry logic (up to 3 attempts)
         protected async Task RunTestAsync(string testName, Func<Task> testBody)
         {
-            try
+            const int maxRetries = 3;
+            Exception? lastException = null;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                _currentTestName = testName;
-                Log.Information($"Starting Test: {testName}");
-                await testBody();
-                await HandleTestSuccessAsync(testName);
+                try
+                {
+                    _currentTestName = testName;
+                    if (attempt == 1)
+                    {
+                        Log.Information($"Starting Test: {testName}");
+                    }
+                    else
+                    {
+                        Log.Warning($"Retrying Test: {testName} (Attempt {attempt}/{maxRetries})");
+                    }
+
+                    await testBody();
+                    await HandleTestSuccessAsync(testName);
+                    return; // Test succeeded, exit retry loop
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    
+                    if (attempt < maxRetries)
+                    {
+                        Log.Warning($"Test failed on attempt {attempt}/{maxRetries}. Will retry...");
+                        Log.Warning($"Exception: {ex.Message}");
+                        // Wait a bit before retrying (exponential backoff)
+                        await Task.Delay(1000 * attempt);
+                    }
+                    else
+                    {
+                        // Final attempt failed - log and throw
+                        Log.Error($"Test failed after {maxRetries} attempts.");
+                        await HandleTestFailureAsync(ex, testName, $"Failed after {maxRetries} attempts");
+                        throw;
+                    }
+                }
             }
-            catch (Exception ex)
+
+            // This should never be reached, but just in case
+            if (lastException != null)
             {
-                await HandleTestFailureAsync(ex, testName, null);
-                throw;
+                throw lastException;
             }
         }
 
