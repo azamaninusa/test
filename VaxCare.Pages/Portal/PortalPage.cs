@@ -45,9 +45,12 @@ namespace VaxCare.Pages.Portal
         private const string ScheduleRiskDescriptionCN = "//*[@class= 'eligibilitydescription']";
         private const string ScheduleRiskDetails = ".//div[contains(@class,'eligibilitydetails')]";
         private const string PatientInSearchBox = "//div[contains(@id,'cdk-overlay')]//span[@class='patient-name']/span[text()='{0}']";
+        // Legacy: SelectProvider uses "//span[@class='mat-option-text' and contains(text(),'{0}')]" with full provider name
         private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
+        private const string ProviderOptionMatOptionText = "//span[@class='mat-option-text' and contains(text(),'{0}')]";
         private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
         private const string ProviderSelected = "//input[@id='provider' and @aria-invalid='false']";
+        /// <summary>Provider name for new appointments. From legacy Portal2SchedulePage NewlyCreatedPatientProvider.</summary>
         private const string NewlyCreatedPatientProvider = "Dean Morris";
 
         // Clinic/location selectors used by VerifyAppointmentLocationAndDayCanBeChanged helpers
@@ -378,8 +381,8 @@ namespace VaxCare.Pages.Portal
                     await Task.Delay(3000); // Match Sleep(3000)
                     Log.Information("✓ Typed provider last name, waiting for dropdown options");
                     
-                    // Select the provider option containing the full name
-                    var providerOptionXpath = string.Format(ProviderNameInSearch, NewlyCreatedPatientProvider);
+                    // Legacy: Click("//span[@class='mat-option-text' and contains(text(),'{0}')]", Provider)
+                    var providerOptionXpath = string.Format(ProviderOptionMatOptionText, NewlyCreatedPatientProvider);
                     Log.Information($"Waiting for provider option '{NewlyCreatedPatientProvider}' to appear");
                     await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
                     Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
@@ -1075,8 +1078,8 @@ namespace VaxCare.Pages.Portal
             await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
             await Task.Delay(3000); // Wait for dropdown options to appear
 
-            // Select the provider option containing the full name
-            var providerOptionXpath = string.Format(ProviderNameInSearch, newProviderName);
+            // Legacy: same selector as SelectProvider - mat-option-text with full name
+            var providerOptionXpath = string.Format(ProviderOptionMatOptionText, newProviderName);
             Log.Information($"Waiting for provider option '{newProviderName}' to appear");
             await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
             Log.Information($"Clicking provider option '{newProviderName}'");

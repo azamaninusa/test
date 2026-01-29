@@ -78,7 +78,8 @@ namespace VaxCare.Core
             return page;
         }
 
-        // Test Runner wrapper with retry logic (up to 3 attempts)
+        // Test Runner wrapper with retry logic (up to 3 attempts).
+        // On retry: kill the browser, start a new session, then run the failed test from the beginning.
         protected async Task RunTestAsync(string testName, Func<Task> testBody)
         {
             const int maxRetries = 3;
@@ -89,13 +90,16 @@ namespace VaxCare.Core
                 try
                 {
                     _currentTestName = testName;
+
                     if (attempt == 1)
                     {
                         Log.Information($"Starting Test: {testName}");
                     }
                     else
                     {
+                        // Retry: kill browser and start a new session, then run test from the beginning
                         Log.Warning($"Retrying Test: {testName} (Attempt {attempt}/{maxRetries})");
+                        KillBrowserAndCreateNewSession();
                     }
 
                     await testBody();
@@ -105,12 +109,12 @@ namespace VaxCare.Core
                 catch (Exception ex)
                 {
                     lastException = ex;
-                    
+
                     if (attempt < maxRetries)
                     {
-                        Log.Warning($"Test failed on attempt {attempt}/{maxRetries}. Will retry...");
+                        Log.Warning($"Test failed on attempt {attempt}/{maxRetries}. Will kill browser and retry from beginning.");
                         Log.Warning($"Exception: {ex.Message}");
-                        // Wait a bit before retrying (exponential backoff)
+                        // Brief delay before next attempt (browser will be killed and recreated at start of next attempt)
                         await Task.Delay(1000 * attempt);
                     }
                     else
@@ -128,6 +132,40 @@ namespace VaxCare.Core
             {
                 throw lastException;
             }
+        }
+
+        /// <summary>
+        /// Quits and disposes the current browser/driver, then creates a new session.
+        /// Used when retrying a failed test so the retry runs from a clean state.
+        /// </summary>
+        private void KillBrowserAndCreateNewSession()
+        {
+            if (Driver != null)
+            {
+                try
+                {
+                    Driver.Quit();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"Driver.Quit() threw: {ex.Message}");
+                }
+
+                try
+                {
+                    Driver.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"Driver.Dispose() threw: {ex.Message}");
+                }
+
+                Driver = null;
+                Log.Information("Browser session closed.");
+            }
+
+            Driver = _driverBuilder.WithBrowser().WithArguments().Build();
+            Log.Information("New browser session started for retry.");
         }
 
         // Success and Failure handlers
