@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using OpenQA.Selenium;
 using Serilog;
+using VaxCare.Core.WebDriver;
 
 namespace VaxCare.Core.Helpers
 {
@@ -26,19 +27,35 @@ namespace VaxCare.Core.Helpers
             string errorMessage,
             IWebDriver? driver = null)
         {
-            // Get current URL if driver is available
             var currentUrl = GetCurrentUrl(driver);
+            LogErrorWithContextCore(logger, ex, errorMessage, currentUrl);
+        }
 
-            // Get method name and file info from stack trace
+        /// <summary>
+        /// Logs error details including method name, file location, current URL (from actor), and exception details.
+        /// Use this overload when you have an IWebDriverActor; the raw driver is not exposed.
+        /// </summary>
+        /// <param name="logger">Serilog logger instance used to write error output.</param>
+        /// <param name="ex">The exception that was thrown.</param>
+        /// <param name="errorMessage">Short description of the failure context.</param>
+        /// <param name="actor">Optional WebDriver actor; when provided, the current page URL is included in the log.</param>
+        public static async Task LogErrorWithContextAsync(
+            ILogger logger,
+            Exception ex,
+            string errorMessage,
+            IWebDriverActor? actor = null)
+        {
+            var currentUrl = actor != null ? await actor.GetCurrentUrlAsync() : "N/A";
+            LogErrorWithContextCore(logger, ex, errorMessage, currentUrl);
+        }
+
+        private static void LogErrorWithContextCore(ILogger logger, Exception ex, string errorMessage, string currentUrl)
+        {
             var (methodName, fileName, lineNumber) = GetStackTraceInfo(ex);
-
-            // Format file path as clickable URL
             var clickableFileUrl = FormatFileUrl(fileName, lineNumber);
 
-            // Log all error details
             logger.Error(ex, errorMessage);
             logger.Error($"Failed Method: {methodName}");
-            // Only log location if we have valid file information
             if (clickableFileUrl != "N/A" && lineNumber > 0)
             {
                 logger.Error($"Failed Location: {clickableFileUrl} (line {lineNumber})");

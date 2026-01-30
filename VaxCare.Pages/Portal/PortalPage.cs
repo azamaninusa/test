@@ -432,7 +432,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"AddAppointmentToScheduleAsync failed for patient {patient.Name}", Driver.Driver);
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"AddAppointmentToScheduleAsync failed for patient {patient.Name}", Driver);
                 throw;
             }
         }
@@ -514,7 +514,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"SelectMatDropdownOptionAsync failed while selecting '{option}'", Driver.Driver);
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"SelectMatDropdownOptionAsync failed while selecting '{option}'", Driver);
                 throw;
             }
         }
@@ -685,7 +685,7 @@ namespace VaxCare.Pages.Portal
             {
                 string patientName = patient?.Name ?? "all patients";
                 Log.Warning($"Failed to delete all appointments for {patientName}. Continuing with check-in.");
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"DeleteAllPatientAppointmentsAsync error for {patientName}", Driver.Driver);
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"DeleteAllPatientAppointmentsAsync error for {patientName}", Driver);
                 // Don't throw - allow check-in to proceed even if deletion fails
             }
 
@@ -1038,7 +1038,7 @@ namespace VaxCare.Pages.Portal
             }
             catch (Exception ex)
             {
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"VerifyVisitTypeAsync failed for visit type '{expectedVisitType}'", Driver.Driver);
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"VerifyVisitTypeAsync failed for visit type '{expectedVisitType}'", Driver);
                 throw;
             }
 
