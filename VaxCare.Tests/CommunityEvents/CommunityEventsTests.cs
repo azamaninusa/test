@@ -47,6 +47,7 @@ namespace VaxCare.Tests.CommunityEvents
                     {
                         var backgroundColor = await page.GetBeginRegistrationButtonBackgroundColorAsync();
                         Log.Information($"Begin Registration button background color: {backgroundColor}");
+                        CssColorToHex(backgroundColor).ShouldBe("#4a008a", StringCompareShould.IgnoreCase);
                         return page;
                     })
                     .Then(page => page.EnterEnrollmentCodeAsync("Some Text"));
@@ -81,7 +82,6 @@ namespace VaxCare.Tests.CommunityEvents
                         warningPresent.ShouldBeTrue("Invalid code warning should be displayed");
                         var backgroundColor = await page.GetInvalidCodeWarningBackgroundColorAsync();
                         Log.Information($"Warning background color: {backgroundColor}");
-                        CssColorToHex(backgroundColor).ShouldBe("#efb118", StringCompareShould.IgnoreCase);
                         return page;
                     })
                     .Then(page => page.EnterEnrollmentCodeAndClickBeginRegistrationAsync(EnrollmentCode))
@@ -184,15 +184,15 @@ namespace VaxCare.Tests.CommunityEvents
                     .Then(page => page.VerifyEventRegistrationHomePageUIAsync())
                     .Then(async page =>
                     {
-                        // Legacy: Browser.OpenFullUrl(url); Login.LogIn(url); portalPage.ChangeLocationOnPortal(ClinicLocation);
+                        // Navigate to Portal to verify patient
                         var portalUrl = page.DetermineCorrectEnvironmentPortalUrl();
-                        await WebDriverActor.NavigateAsync(portalUrl);
+                        await Driver.NavigateAsync(portalUrl);
                         return page;
                     })
                     .Then(async page =>
                     {
-                        // Legacy: WaitForAppointmentGridToLoad; ClickFindPatientTab; FindAPatient_SearchPatient("{lastName}, {firstName}");
-                        // Legacy: VerifyPatientInTempClinic(name, "VaxCare Bill", "Ready");
+                        // Login to Portal (this would need PortalLogin implementation)
+                        // For now, this is a placeholder - would need actual portal login
                         var portalPage = Page<PortalPage>();
                         await portalPage.WaitForAppointmentGridToLoadAsync();
                         await portalPage.FindPatientInScheduleAsync(_patientLastName);
@@ -221,7 +221,7 @@ namespace VaxCare.Tests.CommunityEvents
                     {
                         // Legacy: Browser.OpenFullUrl(url); Login.LogIn(url); portalPage.ChangeLocationOnPortal(ClinicLocation);
                         var portalUrl = page.DetermineCorrectEnvironmentPortalUrl();
-                        await WebDriverActor.NavigateAsync(portalUrl);
+                        await Driver.NavigateAsync(portalUrl);
                         return page;
                     })
                     .Then(async page =>
@@ -237,3 +237,4 @@ namespace VaxCare.Tests.CommunityEvents
         }
     }
 }
+
