@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -26,13 +27,13 @@ namespace VaxCare.Core.Helpers
             IWebDriver? driver = null)
         {
             // Get current URL if driver is available
-            string currentUrl = GetCurrentUrl(driver);
+            var currentUrl = GetCurrentUrl(driver);
 
             // Get method name and file info from stack trace
             var (methodName, fileName, lineNumber) = GetStackTraceInfo(ex);
 
             // Format file path as clickable URL
-            string clickableFileUrl = FormatFileUrl(fileName, lineNumber);
+            var clickableFileUrl = FormatFileUrl(fileName, lineNumber);
 
             // Log all error details
             logger.Error(ex, errorMessage);
@@ -48,7 +49,7 @@ namespace VaxCare.Core.Helpers
 
             if (!string.IsNullOrEmpty(ex.StackTrace))
             {
-                string formattedStackTrace = FormatStackTraceWithClickableLinks(ex.StackTrace);
+                var formattedStackTrace = FormatStackTraceWithClickableLinks(ex.StackTrace);
                 logger.Error($"Stack Trace:\n{formattedStackTrace}");
             }
         }
@@ -107,17 +108,59 @@ namespace VaxCare.Core.Helpers
             }
 
             var stackTrace = new StackTrace(ex, true);
-            
             string methodName = "Unknown";
             string fileName = "Unknown";
             int lineNumber = 0;
 
-            // Look through stack frames to find the actual method that failed
-            // Skip wrapper methods like "Then", "RunTestAsync", etc.
             var skipPatterns = new[] { "Then", "RunTestAsync", "MoveNext", "Invoke", "ExecuteAsync", "<>c", "AsyncStateMachine", "UnpackAndThrowOnError", "Execute", "Click", "SendKeys", "DefaultWait", "ThrowTimeoutException", "Until", "InnerInvoke", "RunFromThreadPoolDispatchLoop", "ExecuteWithThreadLocal" };
-            
-            // First pass: Look for Page class methods ending in "Async" (these are the parent methods from the fluent chain)
-            for (int i = 0; i < stackTrace.FrameCount; i++)
+
+            // First pass: Look for Page class methods ending in "Async" (parent methods from the fluent chain)
+            foreach (var (methodNameOnly, typeName, fullMethodName, frame) in EnumerateNonSkippedFrames(stackTrace, skipPatterns))
+            {
+                if (typeName.EndsWith("Page") && methodNameOnly.EndsWith("Async"))
+                {
+                    methodName = fullMethodName;
+                    fileName = frame.GetFileName() ?? "Unknown";
+                    lineNumber = frame.GetFileLineNumber();
+                    break;
+                }
+            }
+
+            // Second pass: If we didn't find a Page method, look for any method ending in "Async" or Test class methods
+            if (methodName == "Unknown")
+            {
+                foreach (var (methodNameOnly, typeName, fullMethodName, frame) in EnumerateNonSkippedFrames(stackTrace, skipPatterns))
+                {
+                    if (methodNameOnly.EndsWith("Async") || typeName.EndsWith("Page") || typeName.EndsWith("Test"))
+                    {
+                        methodName = fullMethodName;
+                        fileName = frame.GetFileName() ?? "Unknown";
+                        lineNumber = frame.GetFileLineNumber();
+                        if (typeName.EndsWith("Page")) break;
+                    }
+                    else if (methodName == "Unknown")
+                    {
+                        methodName = fullMethodName;
+                        fileName = frame.GetFileName() ?? "Unknown";
+                        lineNumber = frame.GetFileLineNumber();
+                    }
+                }
+            }
+
+            return (methodName, fileName, lineNumber);
+        }
+
+        /// <summary>
+        /// Yields stack frames that are not compiler-generated or wrapper methods (Then, RunTestAsync, etc.).
+        /// </summary>
+        /// <param name="stackTrace">The stack trace to enumerate.</param>
+        /// <param name="skipPatterns">Method or type name substrings that cause a frame to be skipped.</param>
+        /// <returns>Sequence of (methodNameOnly, typeName, fullMethodName, frame) for each non-skipped frame.</returns>
+        private static IEnumerable<(string methodNameOnly, string typeName, string fullMethodName, StackFrame frame)> EnumerateNonSkippedFrames(
+            StackTrace stackTrace,
+            string[] skipPatterns)
+        {
+            for (var i = 0; i < stackTrace.FrameCount; i++)
             {
                 var frame = stackTrace.GetFrame(i);
                 if (frame == null) continue;
@@ -132,81 +175,14 @@ namespace VaxCare.Core.Helpers
                 var typeName = declaringType.Name;
                 var fullMethodName = $"{typeName}.{methodNameOnly}";
 
-                // Skip compiler-generated and wrapper methods
-                bool shouldSkip = skipPatterns.Any(pattern => 
-                    methodNameOnly.Contains(pattern) || 
+                var shouldSkip = skipPatterns.Any(pattern =>
+                    methodNameOnly.Contains(pattern) ||
                     typeName.Contains(pattern));
 
-                if (shouldSkip)
-                {
-                    continue;
-                }
+                if (shouldSkip) continue;
 
-                // Prioritize Page class methods ending in "Async" - these are the parent methods from the fluent chain
-                if (typeName.EndsWith("Page") && methodNameOnly.EndsWith("Async"))
-                {
-                    methodName = fullMethodName;
-                    fileName = frame.GetFileName() ?? "Unknown";
-                    lineNumber = frame.GetFileLineNumber();
-                    break; // Found the parent method, stop searching
-                }
+                yield return (methodNameOnly, typeName, fullMethodName, frame);
             }
-
-            // Second pass: If we didn't find a Page method, look for any method ending in "Async" or Test class methods
-            if (methodName == "Unknown")
-            {
-                for (int i = 0; i < stackTrace.FrameCount; i++)
-                {
-                    var frame = stackTrace.GetFrame(i);
-                    if (frame == null) continue;
-
-                    var method = frame.GetMethod();
-                    if (method == null) continue;
-
-                    var declaringType = method.DeclaringType;
-                    if (declaringType == null) continue;
-
-                    var methodNameOnly = method.Name;
-                    var typeName = declaringType.Name;
-                    var fullMethodName = $"{typeName}.{methodNameOnly}";
-
-                    // Skip compiler-generated and wrapper methods
-                    bool shouldSkip = skipPatterns.Any(pattern => 
-                        methodNameOnly.Contains(pattern) || 
-                        typeName.Contains(pattern));
-
-                    if (shouldSkip)
-                    {
-                        continue;
-                    }
-
-                    // Found a real method - check if it's from a page object or test
-                    // Look for methods ending in "Async" or classes ending in "Page" or "Test"
-                    if (methodNameOnly.EndsWith("Async") || 
-                        typeName.EndsWith("Page") || 
-                        typeName.EndsWith("Test"))
-                    {
-                        methodName = fullMethodName;
-                        fileName = frame.GetFileName() ?? "Unknown";
-                        lineNumber = frame.GetFileLineNumber();
-                        
-                        // Prefer methods from Page classes
-                        if (typeName.EndsWith("Page"))
-                        {
-                            break;
-                        }
-                    }
-                    // If this is the first non-skipped frame, use it as fallback
-                    else if (methodName == "Unknown")
-                    {
-                        methodName = fullMethodName;
-                        fileName = frame.GetFileName() ?? "Unknown";
-                        lineNumber = frame.GetFileLineNumber();
-                    }
-                }
-            }
-
-            return (methodName, fileName, lineNumber);
         }
 
         /// <summary>
@@ -289,10 +265,10 @@ namespace VaxCare.Core.Helpers
             {
                 try
                 {
-                    string inKeyword = match.Groups[1].Value; // "in "
-                    string filePath = match.Groups[2].Value.Trim(); // "C:\path\to\file.cs" or "/path/to/file.cs"
-                    string lineKeyword = match.Groups[3].Value; // "line "
-                    string lineNumber = match.Groups[4].Value; // "123"
+                    var inKeyword = match.Groups[1].Value; // "in "
+                    var filePath = match.Groups[2].Value.Trim(); // "C:\path\to\file.cs" or "/path/to/file.cs"
+                    var lineKeyword = match.Groups[3].Value; // "line "
+                    var lineNumber = match.Groups[4].Value; // "123"
 
                     // Validate that the filePath looks like a file path (contains a file extension)
                     // This helps avoid false matches
@@ -302,7 +278,7 @@ namespace VaxCare.Core.Helpers
                     }
 
                     // Format as clickable file:// URL (FormatFileUrl handles path normalization)
-                    string clickableUrl = FormatFileUrl(filePath, int.Parse(lineNumber));
+                    var clickableUrl = FormatFileUrl(filePath, int.Parse(lineNumber));
                     
                     // Return the formatted line with clickable URL
                     return $"{inKeyword}{clickableUrl} ({lineKeyword}{lineNumber})";
