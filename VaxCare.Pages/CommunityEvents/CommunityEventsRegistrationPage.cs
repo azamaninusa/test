@@ -38,6 +38,7 @@ namespace VaxCare.Pages.CommunityEvents
 
         // Validation selectors
         private const string InvalidCodeWarning = "//div[@class='validation-warning enrollment' and contains(@style,'display')]/span[text()='Invalid code.  Please try again or contact the event organizer.']";
+        private const string ValidationWarningEnrollmentDiv = "//div[@class='validation-warning enrollment']";
         private const string NoClinicWarning = "//span[@id='SelectedClinicId-error' and text()='Please select an event location']";
         private const string IncompleteFieldWarning = "//div[@class='validation-warning' and @style='display: block;']/span[text()='This form must be completed in order to receive vaccinations.']";
         private const string SuccessModalTitle = "//div[@class='modal-title' and text()='Success!']";
@@ -246,6 +247,41 @@ namespace VaxCare.Pages.CommunityEvents
         {
             Log.Step("Verify invalid code warning is displayed");
             return await Driver.IsElementPresentAsync(InvalidCodeWarning.XPath());
+        }
+
+        public async Task<bool> IsInvalidCodeWarningDisplayedAsync()
+        {
+            return await Driver.IsElementPresentAsync(InvalidCodeWarning.XPath());
+        }
+
+        public async Task<string> GetBeginRegistrationButtonBackgroundColorAsync()
+        {
+            var buttonElement = await Driver.FindElementAsync(BeginRegistrationButton.XPath());
+            return await Driver.GetCssValueAsync(buttonElement, "background-color");
+        }
+
+        public async Task<CommunityEventsRegistrationPage> WaitForRegistrationPageElementsAsync()
+        {
+            await Driver.WaitUntilElementLoadsAsync(VaxCareLogo.XPath());
+            await Driver.WaitUntilElementLoadsAsync(EventRegistrationTitle.XPath());
+            return this;
+        }
+
+        public async Task<string> GetInvalidCodeWarningBackgroundColorAsync()
+        {
+            var warningElement = await Driver.FindElementAsync(ValidationWarningEnrollmentDiv.XPath());
+            return await Driver.GetCssValueAsync(warningElement, "background-color");
+        }
+
+        public async Task<string> GetNoClinicWarningColorAsync()
+        {
+            var warningElement = await Driver.FindElementAsync(NoClinicWarning.XPath());
+            return await Driver.GetCssValueAsync(warningElement, "color");
+        }
+
+        public async Task<bool> IsNoClinicWarningDisplayedAsync()
+        {
+            return await Driver.IsElementPresentAsync(NoClinicWarning.XPath());
         }
 
         public async Task<bool> VerifyNoClinicWarningAsync()
