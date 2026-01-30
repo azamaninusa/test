@@ -182,24 +182,27 @@ namespace VaxCare.Pages.CommunityEvents
                 Log.Step($"Enter insurance information: {insurance}");
                 await Driver.SendKeysAsync(By.Name(PrimaryInsuranceInput), insurance);
                 await Driver.SendKeysAsync(MemberIdInput.Id(), "10742845GBHZ");
+                await Driver.SendKeysAsync(PhoneInput.Id(), "382-103-9728"); // Legacy: re-type phone in insurance branch
                 await Driver.SelectDropDownOptionByTextAsync(RelationshipToInsuredDropdown.Id(), "Self");
             }
             
-            // Authorization and Consent
+            // Authorization and Consent (legacy uses WaitForElementToBeUsable + Sleep between clicks for reliable radio selection)
             Log.Step("Fill out authorization and consent questions");
-            await Driver.ClickAsync("//label[@for='Authorization_PatientIsSick_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HasAllergy_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HadVaccineReaction_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HasHealthProblems_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_Immunocompromised_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HadCancerTreatments_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HasHadNeurologicalDisease_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_DoesSmoke_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HasHadBloodTreatment_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_IsPregnant_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HadRecentVaccinations_N']".XPath());
-            await Driver.ClickAsync("//label[@for='Authorization_HadInfluenzaVaccination_N']".XPath());
+            await Task.Delay(500); // Allow authorization section to be ready before first radio ("Are you sick today")
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_PatientIsSick_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HasAllergy_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HadVaccineReaction_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HasHealthProblems_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_Immunocompromised_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HadCancerTreatments_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HasHadNeurologicalDisease_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_DoesSmoke_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HasHadBloodTreatment_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_IsPregnant_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HadRecentVaccinations_N']");
+            await ClickAuthorizationRadioAsync("//label[@for='Authorization_HadInfluenzaVaccination_N']");
             await Driver.ClickAsync(AuthorizationConsentCheckbox.Id());
+            await Task.Delay(250);
             
             // Signature
             await Driver.SendKeysAsync(AuthorizationSignatureInput.Id(), "Test Patient");
@@ -288,6 +291,16 @@ namespace VaxCare.Pages.CommunityEvents
         {
             Log.Step("Verify no clinic selected warning is displayed");
             return await Driver.IsElementPresentAsync(NoClinicWarning.XPath());
+        }
+
+        /// <summary>
+        /// Clicks an authorization radio (label) with a short delay after click so the selection registers before the next radio.
+        /// Legacy uses WaitForElementToBeUsable + Sleep between each Click for reliable radio selection.
+        /// </summary>
+        private async Task ClickAuthorizationRadioAsync(string labelXPath)
+        {
+            await Driver.ClickAsync(labelXPath.XPath());
+            await Task.Delay(250);
         }
 
         public string DetermineCorrectEnvironmentPortalUrl()
