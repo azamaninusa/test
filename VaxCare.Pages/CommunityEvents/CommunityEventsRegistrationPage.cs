@@ -180,7 +180,7 @@ namespace VaxCare.Pages.CommunityEvents
             else
             {
                 Log.Step($"Enter insurance information: {insurance}");
-                await Driver.SendKeysAsync(PrimaryInsuranceInput.Name(), insurance);
+                await Driver.SendKeysAsync(By.Name(PrimaryInsuranceInput), insurance);
                 await Driver.SendKeysAsync(MemberIdInput.Id(), "10742845GBHZ");
                 await Driver.SelectDropDownOptionByTextAsync(RelationshipToInsuredDropdown.Id(), "Self");
             }
