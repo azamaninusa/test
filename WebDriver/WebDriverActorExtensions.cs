@@ -185,11 +185,11 @@ namespace VaxCare.Core.WebDriver
         }
 
         /// <summary>
-        /// Verifies that each of the given XPath selectors finds at least one element on the page.
-        /// Similar to legacy VerifyElementsPresentOnPage(params string[] elemxpaths).
+        /// Verifies that each of the given XPath selectors finds at least one element on the page (DOM existence only).
+        /// Matches legacy VerifyElementsPresentOnPage: uses FindElements-style check, so hidden/disabled elements still pass.
         /// </summary>
         /// <param name="actor">The web driver actor.</param>
-        /// <param name="timeoutInSeconds">Seconds to wait for each element (default 10).</param>
+        /// <param name="timeoutInSeconds">Seconds to poll for each element (optional). If 0, checks immediately like legacy.</param>
         /// <param name="elemXpaths">One or more XPath strings to verify.</param>
         /// <exception cref="Exception">Thrown when any element could not be found on the page.</exception>
         public static async Task VerifyElementsPresentOnPageAsync(
@@ -198,20 +198,40 @@ namespace VaxCare.Core.WebDriver
             foreach (var xpath in elemXpaths)
             {
                 var by = By.XPath(xpath);
-                var present = await actor.IsElementPresentAsync(by, timeoutInSeconds, shouldLog: false);
-                if (!present)
+                var found = timeoutInSeconds <= 0
+                    ? await actor.ElementExistsAsync(by)
+                    : await PollUntilExistsAsync(actor, by, timeoutInSeconds);
+                if (!found)
                     throw new Exception($"The element could not be found on page: {xpath}");
             }
         }
 
         /// <summary>
-        /// Verifies that each of the given XPath selectors finds at least one element on the page.
-        /// Uses default timeout of 10 seconds per element.
+        /// Verifies that each of the given XPath selectors finds at least one element on the page (DOM existence only).
+        /// Immediate check like legacy VerifyElementsPresentOnPage - hidden/disabled elements count as present.
         /// </summary>
         public static async Task VerifyElementsPresentOnPageAsync(
             this IWebDriverActor actor, params string[] elemXpaths)
         {
-            await actor.VerifyElementsPresentOnPageAsync(10, elemXpaths);
+            foreach (var xpath in elemXpaths)
+            {
+                var by = By.XPath(xpath);
+                var present = await actor.ElementExistsAsync(by);
+                if (!present)
+                    throw new Exception($"The element could not be found on page: {xpath}");
+            }
+        }
+
+        private static async Task<bool> PollUntilExistsAsync(IWebDriverActor actor, By by, int timeoutInSeconds)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(timeoutInSeconds);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (await actor.ElementExistsAsync(by))
+                    return true;
+                await Task.Delay(300);
+            }
+            return await actor.ElementExistsAsync(by);
         }
 
         /// <summary>
