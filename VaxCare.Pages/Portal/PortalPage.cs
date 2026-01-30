@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using OpenQA.Selenium;
 using Serilog;
@@ -13,7 +13,7 @@ using VaxCare.Core.WebDriver;
 
 namespace VaxCare.Pages.Portal
 {
-    public class PortalPage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
+    public class PortalPage(IWebDriverActor driver, ILogger log) : BasePage(driver, log)
     {
         private IWebElement? TestPatientInSchedule { get; set; }
         private List<IWebElement> VisitsInSchedule { get; set; } = [];
@@ -37,56 +37,56 @@ namespace VaxCare.Pages.Portal
         private const string AddNewPatientButton = "add-patients-to-schedule-sub-header";
         private const string AddPatientWindow = "AppointmentCreateModal";
         private const string SearchPatientTextBox = "searchPatientInput";
-        private const string ProviderTextBoxId = "provider";
-        private const string EligibilityInProgressText = "//div[contains(@class, 'loadingMessage')]";
-        private const string RiskIcon = "//*[@id=\"eligibility-icon\"]/span[contains(@class,'{0}')]";
-        private const string PatientInfoRiskDescriptionCN = "//span[contains(@class,'eligibility-description')]";
-        private const string PatientInfoRiskDetails = "//p[contains(@class,'fade eligibility-details')]";
-        private const string ScheduleRiskDescriptionCN = "//*[@class= 'eligibilitydescription']";
-        private const string ScheduleRiskDetails = ".//div[contains(@class,'eligibilitydetails')]";
-        private const string PatientInSearchBox = "//div[contains(@id,'cdk-overlay')]//span[@class='patient-name']/span[text()='{0}']";
-        // Legacy: SelectProvider uses "//span[@class='mat-option-text' and contains(text(),'{0}')]" with full provider name
-        private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
-        private const string ProviderOptionMatOptionText = "//span[@class='mat-option-text' and contains(text(),'{0}')]";
-        /// <summary>Provider option inside the open dropdown overlay (avoids matching wrong element when field has placeholder text).</summary>
-        private const string ProviderOptionInOverlay = "//div[contains(@id,'cdk-overlay')]//span[@class='mat-option-text' and contains(text(),'{0}')]";
-        private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
-        private const string ProviderSelected = "//input[@id='provider' and @aria-invalid='false']";
-        /// <summary>Provider name for new appointments. From legacy Portal2SchedulePage NewlyCreatedPatientProvider.</summary>
-        private const string NewlyCreatedPatientProvider = "Dean Morris";
+        private const string ProviderTextBoxId = "provider";
+        private const string EligibilityInProgressText = "//div[contains(@class, 'loadingMessage')]";
+        private const string RiskIcon = "//*[@id=\"eligibility-icon\"]/span[contains(@class,'{0}')]";
+        private const string PatientInfoRiskDescriptionCN = "//span[contains(@class,'eligibility-description')]";
+        private const string PatientInfoRiskDetails = "//p[contains(@class,'fade eligibility-details')]";
+        private const string ScheduleRiskDescriptionCN = "//*[@class= 'eligibilitydescription']";
+        private const string ScheduleRiskDetails = ".//div[contains(@class,'eligibilitydetails')]";
+        private const string PatientInSearchBox = "//div[contains(@id,'cdk-overlay')]//span[@class='patient-name']/span[text()='{0}']";
+        // Legacy: SelectProvider uses "//span[@class='mat-option-text' and contains(text(),'{0}')]" with full provider name
+        private const string ProviderNameInSearch = "//span[contains(text(), '{0}')]";
+        private const string ProviderOptionMatOptionText = "//span[@class='mat-option-text' and contains(text(),'{0}')]";
+        /// <summary>Provider option inside the open dropdown overlay (avoids matching wrong element when field has placeholder text).</summary>
+        private const string ProviderOptionInOverlay = "//div[contains(@id,'cdk-overlay')]//span[@class='mat-option-text' and contains(text(),'{0}')]";
+        private const string FirstProviderOption = "//mat-option[1]//*[@class='mat-option-text']";
+        private const string ProviderSelected = "//input[@id='provider' and @aria-invalid='false']";
+        /// <summary>Provider name for new appointments. From legacy Portal2SchedulePage NewlyCreatedPatientProvider.</summary>
+        private const string NewlyCreatedPatientProvider = "Dean Morris";
 
-        // Clinic/location selectors used by VerifyAppointmentLocationAndDayCanBeChanged helpers
-        private const string ClinicDropdown = "//mat-select[@id='clinicDropDown']//div[contains(@class,'mat-select-arrow')]";
-        private const string ClinicSelector = "//mat-select[@id='clinicSelector']//div[contains(@class,'mat-select-arrow-wrapper')]";
-        private const string ClinicSearchBox = "//input[@placeholder='Search']";
-        private const string ClinicOption = "//span[contains(text(),'{0}')]";
+        // Clinic/location selectors used by VerifyAppointmentLocationAndDayCanBeChanged helpers
+        private const string ClinicDropdown = "//mat-select[@id='clinicDropDown']//div[contains(@class,'mat-select-arrow')]";
+        private const string ClinicSelector = "//mat-select[@id='clinicSelector']//div[contains(@class,'mat-select-arrow-wrapper')]";
+        private const string ClinicSearchBox = "//input[@placeholder='Search']";
+        private const string ClinicOption = "//span[contains(text(),'{0}')]";
 
-        // Visit type selectors
-        private const string VisitTypeDropdown = "//mat-select[@id='visitTypeDropdown']";
-        private const string VisitTypeDropdownArrow = "//mat-select[@id='visitTypeDropdown']//div[contains(@class,'mat-select-arrow')]";
-        private const string VisitTypeOption = "//mat-option[contains(@class,'mat-option') and @aria-disabled='false']//span[text()='{0}']";
-        private const string VisitTypeDisplayText = "//span[@class='appointment-type']";
-        private const string VisitTypeWellXpath = "//mat-select[@id='visitTypeDropdown']//span[text()='Well']";
+        // Visit type selectors
+        private const string VisitTypeDropdown = "//mat-select[@id='visitTypeDropdown']";
+        private const string VisitTypeDropdownArrow = "//mat-select[@id='visitTypeDropdown']//div[contains(@class,'mat-select-arrow')]";
+        private const string VisitTypeOption = "//mat-option[contains(@class,'mat-option') and @aria-disabled='false']//span[text()='{0}']";
+        private const string VisitTypeDisplayText = "//span[@class='appointment-type']";
+        private const string VisitTypeWellXpath = "//mat-select[@id='visitTypeDropdown']//span[text()='Well']";
 
         private const string DatePickerInput = "datePickerInput";
 
-        private const string DivWithText = "//div[contains(text(), '{0}')]";
-        private const string SpanWithText = "//span[text()= '{0}']";
-        private const string LinkWithText = "//a[contains(text(),'{0}')]";
-        // XPath to find patient with appointment time: finds div with patient name, then following sibling with appointment time
-        private const string PatientWithApptTimeAndNameXpath = "//div[@id='table-container']//tr//div[text()='{0}']/ancestor::td[contains(@class,'column-patientname')]/following-sibling::td[contains(@class,'appointmenttime')]/span[text()='{1}']";
-        private const string ProviderXpath = PatientWithApptTimeAndNameXpath + "/following-sibling::div[contains(@class,'provider')]";
-        private const string PatientRowWithLastNameXpath = "//div[@id='table-container']//tr//div[text()=' {0}, ']/ancestor::tr[contains(@class,'appt-row')]";
-        private const string AppointmentTimeSpanXpath = ".//td[contains(@class,'appointmenttime')]//span";
-        private const string PatientAppointmentOnSchedulerXpath = "//tbody[contains(@class,'ng-tns')]/tr//div[contains(@class,'patientname')]/div[text()='{0}']";
+        private const string DivWithText = "//div[contains(text(), '{0}')]";
+        private const string SpanWithText = "//span[text()= '{0}']";
+        private const string LinkWithText = "//a[contains(text(),'{0}')]";
+        // XPath to find patient with appointment time: finds div with patient name, then following sibling with appointment time
+        private const string PatientWithApptTimeAndNameXpath = "//div[@id='table-container']//tr//div[text()='{0}']/ancestor::td[contains(@class,'column-patientname')]/following-sibling::td[contains(@class,'appointmenttime')]/span[text()='{1}']";
+        private const string ProviderXpath = PatientWithApptTimeAndNameXpath + "/following-sibling::div[contains(@class,'provider')]";
+        private const string PatientRowWithLastNameXpath = "//div[@id='table-container']//tr//div[text()=' {0}, ']/ancestor::tr[contains(@class,'appt-row')]";
+        private const string AppointmentTimeSpanXpath = ".//td[contains(@class,'appointmenttime')]//span";
+        private const string PatientAppointmentOnSchedulerXpath = "//tbody[contains(@class,'ng-tns')]/tr//div[contains(@class,'patientname')]/div[text()='{0}']";
 
-        // Logout: user dropdown (e.g. "Hi QA"), Log Out button, Partner Log In screen
-        private const string UserDropdownButton = "//app-user-option//button";
-        private const string LogOutButton = "//button[text()='Log Out']";
-        private const string PartnerLogInScreenUsernameField = "idp-discovery-username";
+        // Logout: user dropdown (e.g. "Hi QA"), Log Out button, Partner Log In screen
+        private const string UserDropdownButton = "//app-user-option//button";
+        private const string LogOutButton = "//button[text()='Log Out']";
+        private const string PartnerLogInScreenUsernameField = "idp-discovery-username";
 
-        private const string LoadingIcon = "app-loading-image";
-        private const string DatePicker = "datepickerTitle";
+        private const string LoadingIcon = "app-loading-image";
+        private const string DatePicker = "datepickerTitle";
         private const string RunMedDButton = "run-med-d";
         private const string EditPaymentInfoButton = "save";
 
@@ -113,14 +113,14 @@ namespace VaxCare.Pages.Portal
         private const string NewPatientPhone = "phone";
         private const string NewPatientPayer = "primaryInsurance";
 
-        private const string LoadingSpinner = "//*[@class='block-ui-spinner']";
-        private const string AppointmentGridLoadedXpath = "//div[@id='chmln-dom' and not(@aria-hidden)]";
+        private const string LoadingSpinner = "//*[@class='block-ui-spinner']";
+        private const string AppointmentGridLoadedXpath = "//div[@id='chmln-dom' and not(@aria-hidden)]";
 
-        private TestPatient? _currentPatient;
-        private DateTime _appointmentDate = DateTime.Today;
-        private string? _appointmentTime;
+        private TestPatient? _currentPatient;
+        private DateTime _appointmentDate = DateTime.Today;
+        private string? _appointmentTime;
 
-        public async Task<bool> ConfirmGracefulLoginFailedMessageAsync()
+        public async Task<bool> ConfirmGracefulLoginFailedMessageAsync()
         {
             Log.Step("Confirm that login fails gracefully");
             var result = await Driver.IsTextPresentAsync(LoginErrorMessage.XPath(), "Unable to sign in");
@@ -160,19 +160,19 @@ namespace VaxCare.Pages.Portal
             return VisitsInSchedule.Count > 0;
         }
 
-        public async Task<PortalPage> WaitForAppointmentGridToLoadAsync()
-        {
-            int timeout = 40;
-            Log.Step("Step: Wait for appointment grid to load.");
-            await Driver.WaitForElementToDisappearAsync(LoadingIcon.ClassName(), timeout);
-            await Driver.WaitUntilElementLoadsAsync(DatePicker.ClassName(), timeout);
-            // This ensures that Appt grid has loaded completely after deleting an appt (matching behavior)
-            await Driver.WaitUntilElementLoadsAsync(AppointmentGridLoadedXpath.XPath(), timeout);
-            // Match behavior: give UI extra time to settle after grid load
-            await Task.Delay(3000);
-            //await Driver.CheckBrowserConsoleErrorsAsync(Log);
-            return this;
-        }
+        public async Task<PortalPage> WaitForAppointmentGridToLoadAsync()
+        {
+            int timeout = 40;
+            Log.Step("Step: Wait for appointment grid to load.");
+            await Driver.WaitForElementToDisappearAsync(LoadingIcon.ClassName(), timeout);
+            await Driver.WaitUntilElementLoadsAsync(DatePicker.ClassName(), timeout);
+            // This ensures that Appt grid has loaded completely after deleting an appt (matching behavior)
+            await Driver.WaitUntilElementLoadsAsync(AppointmentGridLoadedXpath.XPath(), timeout);
+            // Match behavior: give UI extra time to settle after grid load
+            await Task.Delay(3000);
+            //await Driver.CheckBrowserConsoleErrorsAsync(Log);
+            return this;
+        }
 
         public async Task<PortalPage> FindPatientInScheduleAsync(string lastName)
         {
@@ -347,177 +347,177 @@ namespace VaxCare.Pages.Portal
             return data;
         }
 
-        public async Task<PortalPage> AddAppointmentToScheduleAsync(TestPatient patient, bool createNewPatient)
-        {
-            Log.Step($"AddAppointmentToScheduleAsync: Starting to add appointment for patient {patient.Name} (createNewPatient={createNewPatient})");
-            Log.Information($"Location: PortalPage.AddAppointmentToScheduleAsync (line ~317)");
-            
-            try
-            {
-                Log.Information("Step 1: Clicking 'Add New Patient' button");
-                await Driver.ClickAsync(AddNewPatientButton.Id());
-                Log.Information("✓ Successfully clicked 'Add New Patient' button");
+        public async Task<PortalPage> AddAppointmentToScheduleAsync(TestPatient patient, bool createNewPatient)
+        {
+            Log.Step($"AddAppointmentToScheduleAsync: Starting to add appointment for patient {patient.Name} (createNewPatient={createNewPatient})");
+            Log.Information($"Location: PortalPage.AddAppointmentToScheduleAsync (line ~317)");
 
-                if (createNewPatient)
-                {
-                    Log.Information("Step 2: Creating new patient via UI");
-                    await CreateNewPatientAsync(patient);
-                    Log.Information($"✓ Successfully created new patient: {patient.FirstName} {patient.LastName}");
-                }
-                else
-                {
-                    Log.Information("Step 2: Searching for existing patient");
-                    await SearchForPatientAsync(patient);
-                    Log.Information($"✓ Successfully searched for patient: {patient.Name}");
-                }
+            try
+            {
+                Log.Information("Step 1: Clicking 'Add New Patient' button");
+                await Driver.ClickAsync(AddNewPatientButton.Id());
+                Log.Information("✓ Successfully clicked 'Add New Patient' button");
 
-                // Select provider from dropdown: click field to open, clear any placeholder (e.g. "Qa Automation"), type and select "Dean Morris"
-                Log.Information("Step 3: Selecting provider from dropdown");
-                await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
-                await Driver.ClickAsync(ProviderTextBoxId.Id());
-                await Task.Delay(500);
-                // Clear any existing/placeholder text so we don't append (e.g. "Qa Automation" + "Morris" -> "Qa AutomationDean Morris")
-                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
-                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
-                var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris" for "Dean Morris"
-                Log.Information($"Typing provider last name '{providerLastName}' (selecting {NewlyCreatedPatientProvider})");
-                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
-                await Task.Delay(3000); // Match legacy Sleep(3000) for dropdown to open/filter
-                // Click the option inside the open overlay so we select "Dean Morris" from the dropdown
-                var providerOptionXpath = string.Format(ProviderOptionInOverlay, NewlyCreatedPatientProvider);
-                Log.Information($"Waiting for provider option '{NewlyCreatedPatientProvider}' in dropdown");
-                await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
-                Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
-                await Driver.ClickAsync(providerOptionXpath.XPath());
-                Log.Information("Waiting for provider to be confirmed as selected");
-                await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
-                Log.Information($"✓ Successfully selected provider: {NewlyCreatedPatientProvider}");
+                if (createNewPatient)
+                {
+                    Log.Information("Step 2: Creating new patient via UI");
+                    await CreateNewPatientAsync(patient);
+                    Log.Information($"✓ Successfully created new patient: {patient.FirstName} {patient.LastName}");
+                }
+                else
+                {
+                    Log.Information("Step 2: Searching for existing patient");
+                    await SearchForPatientAsync(patient);
+                    Log.Information($"✓ Successfully searched for patient: {patient.Name}");
+                }
 
-                // Match behavior: wait after provider selection before clicking Add button
-                Log.Information("Step 5: Waiting for UI to settle after provider selection (matching Sleep(3000))");
-                await Task.Delay(3000);
-                Log.Information("✓ UI settled");
+                // Select provider from dropdown: click field to open, clear any placeholder (e.g. "Qa Automation"), type and select "Dean Morris"
+                Log.Information("Step 3: Selecting provider from dropdown");
+                await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
+                await Driver.ClickAsync(ProviderTextBoxId.Id());
+                await Task.Delay(500);
+                // Clear any existing/placeholder text so we don't append (e.g. "Qa Automation" + "Morris" -> "Qa AutomationDean Morris")
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
+                var providerLastName = NewlyCreatedPatientProvider.Split(' ')[1]; // "Morris" for "Dean Morris"
+                Log.Information($"Typing provider last name '{providerLastName}' (selecting {NewlyCreatedPatientProvider})");
+                await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
+                await Task.Delay(3000); // Match legacy Sleep(3000) for dropdown to open/filter
+                // Click the option inside the open overlay so we select "Dean Morris" from the dropdown
+                var providerOptionXpath = string.Format(ProviderOptionInOverlay, NewlyCreatedPatientProvider);
+                Log.Information($"Waiting for provider option '{NewlyCreatedPatientProvider}' in dropdown");
+                await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
+                Log.Information($"Clicking provider option '{NewlyCreatedPatientProvider}'");
+                await Driver.ClickAsync(providerOptionXpath.XPath());
+                Log.Information("Waiting for provider to be confirmed as selected");
+                await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+                Log.Information($"✓ Successfully selected provider: {NewlyCreatedPatientProvider}");
 
-                Log.Information("Step 6: Clicking 'Add Appointment to Schedule' button");
-                // Wait for button to be clickable and use JavaScript click as fallback if intercepted
-                try
-                {
-                    await Driver.WaitUntilElementLoadsAsync(ScheduleAddAppointmentButton.Id(), 15);
-                    var isClickable = await Driver.IsElementClickableAsync(ScheduleAddAppointmentButton.Id(), 5);
-                    if (isClickable)
-                    {
-                        await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
-                        Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button");
-                    }
-                    else
-                    {
-                        Log.Warning("Button not clickable via normal click, using JavaScript click");
-                        await Driver.ExecuteJavaScriptClickAsync(ScheduleAddAppointmentButton.Id());
-                        Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button (via JavaScript)");
-                    }
-                }
-                catch (ElementClickInterceptedException)
-                {
-                    Log.Warning("Element click intercepted, using JavaScript click as fallback");
-                    await Driver.ExecuteJavaScriptClickAsync(ScheduleAddAppointmentButton.Id());
-                    Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button (via JavaScript fallback)");
-                }
+                // Match behavior: wait after provider selection before clicking Add button
+                Log.Information("Step 5: Waiting for UI to settle after provider selection (matching Sleep(3000))");
+                await Task.Delay(3000);
+                Log.Information("✓ UI settled");
 
-                Log.Information("Step 6: Clicking 'Done' button");
-                await Driver.ClickAsync(DoneButton.Id());
-                Log.Information("✓ Successfully clicked 'Done' button");
+                Log.Information("Step 6: Clicking 'Add Appointment to Schedule' button");
+                // Wait for button to be clickable and use JavaScript click as fallback if intercepted
+                try
+                {
+                    await Driver.WaitUntilElementLoadsAsync(ScheduleAddAppointmentButton.Id(), 15);
+                    var isClickable = await Driver.IsElementClickableAsync(ScheduleAddAppointmentButton.Id(), 5);
+                    if (isClickable)
+                    {
+                        await Driver.ClickAsync(ScheduleAddAppointmentButton.Id());
+                        Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button");
+                    }
+                    else
+                    {
+                        Log.Warning("Button not clickable via normal click, using JavaScript click");
+                        await Driver.ExecuteJavaScriptClickAsync(ScheduleAddAppointmentButton.Id());
+                        Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button (via JavaScript)");
+                    }
+                }
+                catch (ElementClickInterceptedException)
+                {
+                    Log.Warning("Element click intercepted, using JavaScript click as fallback");
+                    await Driver.ExecuteJavaScriptClickAsync(ScheduleAddAppointmentButton.Id());
+                    Log.Information("✓ Successfully clicked 'Add Appointment to Schedule' button (via JavaScript fallback)");
+                }
 
-                Log.Step($"AddAppointmentToScheduleAsync: Successfully completed adding appointment for {patient.Name}");
-                return this;
-            }
-            catch (Exception ex)
-            {
-                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"AddAppointmentToScheduleAsync failed for patient {patient.Name}", Driver);
-                throw;
-            }
-        }
+                Log.Information("Step 6: Clicking 'Done' button");
+                await Driver.ClickAsync(DoneButton.Id());
+                Log.Information("✓ Successfully clicked 'Done' button");
 
-        private async Task CreateNewPatientAsync(TestPatient patient, string insuranceName = "Uninsured")
-        {
-            Log.Information($"CreateNewPatientAsync: Starting to create new patient {patient.FirstName} {patient.LastName}");
-            Log.Information($"Location: PortalPage.CreateNewPatientAsync (line ~354)");
-            
-            try
-            {
-                // Wait for loading spinner to disappear before clicking (prevents ElementClickInterceptedException)
-                Log.Information("Step 1: Waiting for loading spinner to disappear");
-                await Driver.WaitForElementToDisappearAsync(LoadingSpinner.XPath(), 15);
-                Log.Information("✓ Loading spinner disappeared");
+                Log.Step($"AddAppointmentToScheduleAsync: Successfully completed adding appointment for {patient.Name}");
+                return this;
+            }
+            catch (Exception ex)
+            {
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"AddAppointmentToScheduleAsync failed for patient {patient.Name}", Driver);
+                throw;
+            }
+        }
 
-                Log.Information("Step 2: Clicking 'Create New Patient' button");
-                await Driver.ClickAsync(CreateNewPatientButton.Id());
-                Log.Information("✓ Successfully clicked 'Create New Patient' button");
+        private async Task CreateNewPatientAsync(TestPatient patient, string insuranceName = "Uninsured")
+        {
+            Log.Information($"CreateNewPatientAsync: Starting to create new patient {patient.FirstName} {patient.LastName}");
+            Log.Information($"Location: PortalPage.CreateNewPatientAsync (line ~354)");
 
-                // Wait for the patient info window to be fully loaded before typing
-                Log.Information("Step 3: Waiting for patient information modal to load");
-                await Driver.WaitUntilElementLoadsAsync(AddPatientWindow.Id(), 15);
-                Log.Information("✓ Patient information modal loaded");
+            try
+            {
+                // Wait for loading spinner to disappear before clicking (prevents ElementClickInterceptedException)
+                Log.Information("Step 1: Waiting for loading spinner to disappear");
+                await Driver.WaitForElementToDisappearAsync(LoadingSpinner.XPath(), 15);
+                Log.Information("✓ Loading spinner disappeared");
 
-                Log.Information($"Step 4: Entering first name: '{patient.FirstName}'");
-                await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
-                Log.Information($"✓ Entered first name: {patient.FirstName}");
+                Log.Information("Step 2: Clicking 'Create New Patient' button");
+                await Driver.ClickAsync(CreateNewPatientButton.Id());
+                Log.Information("✓ Successfully clicked 'Create New Patient' button");
 
-                Log.Information($"Step 5: Entering last name: '{patient.LastName}'");
-                await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
-                Log.Information($"✓ Entered last name: {patient.LastName}");
+                // Wait for the patient info window to be fully loaded before typing
+                Log.Information("Step 3: Waiting for patient information modal to load");
+                await Driver.WaitUntilElementLoadsAsync(AddPatientWindow.Id(), 15);
+                Log.Information("✓ Patient information modal loaded");
 
-                var genderText = patient.Gender == 1 ? "Male" : "Female";
-                Log.Information($"Step 6: Selecting gender: '{genderText}'");
-                await SelectMatDropdownOptionAsync(NewPatientGender.Id(), genderText);
-                Log.Information($"✓ Selected gender: {genderText}");
+                Log.Information($"Step 4: Entering first name: '{patient.FirstName}'");
+                await Driver.SendKeysAsync(NewPatientFirstName.Id(), patient.FirstName);
+                Log.Information($"✓ Entered first name: {patient.FirstName}");
 
-                Log.Information($"Step 7: Entering date of birth: '{patient.DoB}'");
-                await Driver.SendKeysAsync(NewPatientDoB.Id(), patient.DoB);
-                Log.Information($"✓ Entered DOB: {patient.DoB}");
+                Log.Information($"Step 5: Entering last name: '{patient.LastName}'");
+                await Driver.SendKeysAsync(NewPatientLastName.Id(), patient.LastName);
+                Log.Information($"✓ Entered last name: {patient.LastName}");
 
-                Log.Information($"Step 8: Entering phone number: '{patient.PhoneNumber}'");
-                await Driver.SendKeysAsync(NewPatientPhone.Id(), patient.PhoneNumber);
-                Log.Information($"✓ Entered phone: {patient.PhoneNumber}");
+                var genderText = patient.Gender == 1 ? "Male" : "Female";
+                Log.Information($"Step 6: Selecting gender: '{genderText}'");
+                await SelectMatDropdownOptionAsync(NewPatientGender.Id(), genderText);
+                Log.Information($"✓ Selected gender: {genderText}");
 
-                Log.Information($"Step 9: Entering payer/insurance: '{insuranceName}'");
-                await Driver.SendKeysAsync(NewPatientPayer.Id(), insuranceName);
-                Log.Information($"✓ Entered payer: {insuranceName}");
+                Log.Information($"Step 7: Entering date of birth: '{patient.DoB}'");
+                await Driver.SendKeysAsync(NewPatientDoB.Id(), patient.DoB);
+                Log.Information($"✓ Entered DOB: {patient.DoB}");
 
-                Log.Information("Step 10: Clicking 'Save' button to create patient");
-                await Driver.ClickAsync(SaveButton.XPath());
-                Log.Information("✓ Successfully clicked 'Save' button");
+                Log.Information($"Step 8: Entering phone number: '{patient.PhoneNumber}'");
+                await Driver.SendKeysAsync(NewPatientPhone.Id(), patient.PhoneNumber);
+                Log.Information($"✓ Entered phone: {patient.PhoneNumber}");
 
-                Log.Information($"CreateNewPatientAsync: Successfully created patient {patient.FirstName} {patient.LastName}");
-            }
-            catch (Exception ex)
-            {
-                ErrorLoggingHelper.LogErrorWithContext(Log, ex, $"CreateNewPatientAsync failed for patient {patient.FirstName} {patient.LastName}", Driver.Driver);
-                throw;
-            }
-        }
+                Log.Information($"Step 9: Entering payer/insurance: '{insuranceName}'");
+                await Driver.SendKeysAsync(NewPatientPayer.Id(), insuranceName);
+                Log.Information($"✓ Entered payer: {insuranceName}");
 
-        private async Task SelectMatDropdownOptionAsync(By selector, string option)
-        {
-            Log.Information($"SelectMatDropdownOptionAsync: Selecting option '{option}' from dropdown");
-            Log.Information($"Location: PortalPage.SelectMatDropdownOptionAsync (line ~451)");
-            
-            try
-            {
-                Log.Information($"Step 1: Clicking dropdown to open options");
-                await Driver.ClickAsync(selector);
-                Log.Information("✓ Dropdown opened");
+                Log.Information("Step 10: Clicking 'Save' button to create patient");
+                await Driver.ClickAsync(SaveButton.XPath());
+                Log.Information("✓ Successfully clicked 'Save' button");
 
-                var optionXpath = string.Format(SpanWithText, option);
-                Log.Information($"Step 2: Clicking option '{option}' (XPath: {optionXpath})");
-                await Driver.ClickAsync(optionXpath.XPath());
-                Log.Information($"✓ Successfully selected option: {option}");
-            }
-            catch (Exception ex)
-            {
-                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"SelectMatDropdownOptionAsync failed while selecting '{option}'", Driver);
-                throw;
-            }
-        }
+                Log.Information($"CreateNewPatientAsync: Successfully created patient {patient.FirstName} {patient.LastName}");
+            }
+            catch (Exception ex)
+            {
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"CreateNewPatientAsync failed for patient {patient.FirstName} {patient.LastName}", Driver);
+                throw;
+            }
+        }
+
+        private async Task SelectMatDropdownOptionAsync(By selector, string option)
+        {
+            Log.Information($"SelectMatDropdownOptionAsync: Selecting option '{option}' from dropdown");
+            Log.Information($"Location: PortalPage.SelectMatDropdownOptionAsync (line ~451)");
+
+            try
+            {
+                Log.Information($"Step 1: Clicking dropdown to open options");
+                await Driver.ClickAsync(selector);
+                Log.Information("✓ Dropdown opened");
+
+                var optionXpath = string.Format(SpanWithText, option);
+                Log.Information($"Step 2: Clicking option '{option}' (XPath: {optionXpath})");
+                await Driver.ClickAsync(optionXpath.XPath());
+                Log.Information($"✓ Successfully selected option: {option}");
+            }
+            catch (Exception ex)
+            {
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"SelectMatDropdownOptionAsync failed while selecting '{option}'", Driver);
+                throw;
+            }
+        }
 
         private async Task SearchForPatientAsync(TestPatient patient)
         {
@@ -545,16 +545,16 @@ namespace VaxCare.Pages.Portal
             return this;
         }
 
-        public async Task<PortalPage> DeleteTrackedPatientVisitAsync(PortalTestFixture fixture)
-        {
-            return await Task.Run(() =>
-            {
-                fixture.PatientVisitIds.Clear();
-                return this;
-            });
-        }
+        public async Task<PortalPage> DeleteTrackedPatientVisitAsync(PortalTestFixture fixture)
+        {
+            return await Task.Run(() =>
+            {
+                fixture.PatientVisitIds.Clear();
+                return this;
+            });
+        }
 
-        public async Task<PortalPage> SchedulerSearchForPatientAsync(string patientName)
+        public async Task<PortalPage> SchedulerSearchForPatientAsync(string patientName)
         {
             await Driver.ClickAsync(string.Format(LinkWithText, "Find a Patient").XPath());
             await Driver.SendKeysAsync(SearchPatientTextBox.Id(), patientName);
@@ -571,667 +571,667 @@ namespace VaxCare.Pages.Portal
             return IspatientInformationWindowOpen;
         }
 
-        public async Task<PortalPage> EditAppointmentAsync(string lastName, int days)
-        {
-            // Use stored appointmentDate and add days (matching legacy behavior)
-            var date = _appointmentDate.AddDays(days).ToString("M/d/yyyy");
-
-            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
-            await Driver.ClickAsync(EditAppointmentButton.Id(), 15);
-            await Driver.ClickAsync(DatePickerInput.Id(), 15);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), date);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
-            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 15);
-            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Gets the count of patient appointments matching the current patient's last name and appointment time.
-        /// Matches GetPatientAppointmentsCount behavior.
-        /// </summary>
-        private async Task<int> GetPatientAppointmentsCountAsync()
-        {
-            if (_currentPatient == null || string.IsNullOrEmpty(_appointmentTime))
-            {
-                Log.Warning("GetPatientAppointmentsCountAsync: Missing patient or appointment time");
-                return 0;
-            }
-
-            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
-            // Use FindAllElementsAsync with parent and child selectors (matching legacy GetElements behavior).
-            // Use the main appointment grid container as parent instead of a specific table container
-            // to avoid failures when the inner structure changes.
-            var appointments = await Driver.FindAllElementsAsync(
-                AppointmentGridLoadedXpath.XPath(),
-                scheduledPatientXpath.XPath(),
-                10);
-            
-            return appointments.Count;
-        }
-
-        public async Task<PortalPage> ChangeScheduleDateAsync(int days)
-        {
-            Log.Step($"Change schedule date by {days} days.");
-            _appointmentDate = DateTime.Today.AddDays(days);
-            for (int i = 0; i < days; i++)
-            {
-                await Driver.ClickAsync(ArrowButton.XPath());
-            }
-            return this;
-        }
-
-        // ===== Helpers for VerifyAppointmentLocationAndDayCanBeChanged =====
-
-        public async Task<PortalPage> ChangeToDaysInAdvanceAsync(int numberOfDays)
-        {
-            // Store appointment date (matching legacy behavior)
-            _appointmentDate = DateTime.Today.AddDays(numberOfDays);
-            // Reuse existing schedule change helper
-            return await ChangeScheduleDateAsync(numberOfDays);
-        }
-
-        /// <summary>
-        /// Deletes all appointments/visits in the schedule table before check-in.
-        /// Matches DeleteAllAppointments() implementation exactly.
-        /// </summary>
-        public async Task<PortalPage> DeleteAllPatientAppointmentsAsync(TestPatient? patient = null)
-        {
-            string patientContext = patient != null ? $" for patient: {patient.Name}" : "";
-            Log.Step($"Delete all appointments in schedule{patientContext}");
-
-            try
-            {
-                // If the appointment table itself is not present, there is nothing to delete.
-                // Do NOT fail the test in this case – just log and exit.
-                var tableExists = await Driver.ElementExistsAsync(AppointmentTable.Id(), shouldLog: false);
-                if (!tableExists)
-                {
-                    Log.Warning("DeleteAllPatientAppointmentsAsync: Appointment table not found. Skipping delete.");
-                    return this;
-                }
-
-                // Get all appointment rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
-                var checkedInPatientRows = await Driver.FindAllElementsAsync(
-                    AppointmentTable.Id(),
-                    AppointmentRow.XPath(),
-                    15);
-
-                while (checkedInPatientRows.Count > 0)
-                {
-                    // Click first row (matching legacy: CheckedInPatientRows[0].Click())
-                    await Driver.ClickAsync(checkedInPatientRows[0]);
-
-                    // ClickEditDelete (matching legacy ClickEditDelete method exactly)
-                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
-                    await Driver.ClickAsync(DeleteButton.Id(), 3);
-                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
-                    await Task.Delay(3000); // Sleep(3000) from legacy
-
-                    // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
-                    await WaitForAppointmentGridToLoadAsync();
-
-                    // Re-fetch all rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
-                    checkedInPatientRows = await Driver.FindAllElementsAsync(
-                        AppointmentTable.Id(),
-                        AppointmentRow.XPath(),
-                        15);
-                }
-            }
-            catch (Exception ex)
-            {
-                string patientName = patient?.Name ?? "all patients";
-                Log.Warning($"Failed to delete all appointments for {patientName}. Continuing with check-in.");
-                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"DeleteAllPatientAppointmentsAsync error for {patientName}", Driver);
-                // Don't throw - allow check-in to proceed even if deletion fails
-            }
-
-            return this;
-        }
-
-        public async Task<PortalPage> CheckInPatientAsync(TestPatient patient)
-        {
-            Log.Step($"Check in patient: {patient.Name}");
-            
-            // Delete any existing appointments for this patient before check-in
-            await DeleteAllPatientAppointmentsAsync(patient);
-            
-            _currentPatient = patient;
-
-            // Use existing helper to add an appointment for this patient.
-            // We create the patient via UI to match behavior.
-            await AddAppointmentToScheduleAsync(patient, createNewPatient: true);
-            return this;
-        }
-
-        /// <summary>
-        /// Changes the clinic/location on the appointment for the patient found by lastName.
-        /// Same pattern as ChangeVisitTypeForPatientAsync(lastName, newVisitType).
-        /// </summary>
-        public async Task<PortalPage> ChangeLocationOnAppointmentAsync(string lastName, string newLocation)
-        {
-            Log.Step($"Change location on appointment for patient with last name '{lastName}' to '{newLocation}'.");
-
-            // Set _currentPatient so downstream steps (VerifyPatientIsNotListedAsync, VerifyPatientAppointmentExistsAsync, ChangeDateOnAppointmentAsync) work.
-            _currentPatient = new TestPatient { LastName = lastName, FirstName = "" };
-
-            // Find and click the patient by lastName (same pattern as ChangeVisitTypeForPatientAsync)
-            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
-            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
-
-            // Open Edit Appointment
-            await Driver.ClickAsync(EditAppointmentButton.Id());
-
-            // Open the clinic/location dropdown (wait to avoid timing issues)
-            await Driver.WaitUntilElementLoadsAsync(ClinicDropdown.XPath(), 15);
-            await Driver.ClickAsync(ClinicDropdown.XPath());
-
-            // Select the desired location option
-            var locationSelector = string.Format(SpanWithText, newLocation);
-            await Driver.WaitUntilElementLoadsAsync(locationSelector.XPath(), 15);
-            await Driver.ClickAsync(locationSelector.XPath());
-
-            // Save changes and wait for the patient info window to close
-            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
-            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
-            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
-
-            return this;
-        }
-
-        public async Task<PortalPage> ChangeLocationOnPortalAsync(string newLocation)
-        {
-            // Mimic Portal2Schedule.ChangeLocationOnPortal:
-            // 1. Open the clinic selector dropdown
-            // 2. Type the clinic/location name into the search box
-            // 3. Select the matching option
-            // 4. Verify the selector shows the new location
-
-            Log.Step($"Change portal location to '{newLocation}'.");
-
-            // Open clinic selector
-            await Driver.ClickAsync(ClinicSelector.XPath());
-
-            // Type into the clinic search box
-            await Driver.SendKeysAsync(ClinicSearchBox.XPath(), newLocation);
-
-            // Click the matching option
-            await Driver.ClickAsync(string.Format(ClinicOption, newLocation).XPath());
-
-            // Verify the selected clinic text contains the new location
-            var selectedClinicXpath = $"//mat-select[@id='clinicSelector']//span[contains(text(),'{newLocation}')]";
-            var locationChanged = await Driver.IsElementPresentAsync(selectedClinicXpath.XPath(), 5);
-            if (!locationChanged)
-            {
-                Log.Error($"Clinic location did not change to '{newLocation}'.");
-            }
-
-            return this;
-        }
-
-        public async Task<PortalPage> ChangeDateOnAppointmentAsync(int numberOfDays)
-        {
-            if (_currentPatient == null)
-            {
-                Log.Warning("ChangeDateOnAppointmentAsync called before CheckInPatientAsync; skipping date change.");
-                return this;
-            }
-
-            // Get appointment count BEFORE change (matching legacy behavior)
-            int totalAppts = await GetPatientAppointmentsCountAsync();
-            Log.Information($"Appointment count before date change: {totalAppts}");
-
-            // Click first appointment in list (matching appointments[0].Click())
-            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime ?? "");
-            var firstAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 15);
-            await Driver.ClickAsync(firstAppointment);
-
-            // Edit appointment
-            await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
-
-            // Calculate new date using stored appointmentDate (matching behavior)
-            string newAppointmentDateString = _appointmentDate.AddDays(numberOfDays).ToString("M/d/yyyy");
-            await Driver.ClickAsync(DatePickerInput.Id());
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), newAppointmentDateString);
-            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
-            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
-
-            // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
-            await WaitForAppointmentGridToLoadAsync();
-
-            // Get appointment count AFTER change and verify it dropped by 1
-            int currentApptCount = await GetPatientAppointmentsCountAsync();
-            Log.Information($"Appointment count after date change: {currentApptCount}");
-
-            if (currentApptCount != totalAppts - 1)
-            {
-                Log.Error($"Appointment count did not drop after moving an appointment to {numberOfDays} days. Expected: {totalAppts - 1}, Actual: {currentApptCount}");
-            }
-
-            return this;
-        }
-
-        public async Task<PortalPage> DeleteAppointmentAsync()
-        {
-            if (_currentPatient == null)
-            {
-                Log.Warning("DeleteAppointmentAsync called before CheckInPatientAsync; skipping delete.");
-                return this;
-            }
-
-            try
-            {
-                // DeleteAppointment deletes one appointment; here we keep deleting
-                // for the current patient until no appointments remain for that patient.
-
-                // Base XPath used for this patient's appointments in the grid
-                var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {_currentPatient.LastName}, ");
-
-                while (true)
-                {
-                    // Find all current appointments for this patient
-                    var currentAppts = await Driver.FindAllElementsAsync(
-                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
-                        By.XPath(patientAppointmentXpath),
-                        10);
-
-                    var countBefore = currentAppts.Count;
-                    Log.Information($"Current appointment count for {_currentPatient.Name} before delete iteration: {countBefore}");
-
-                    // No more appointments for this patient – we're done
-                    if (countBefore == 0)
-                    {
-                        break;
-                    }
-
-                    // Click first appointment for this patient (equivalent to legacy ClickSimple)
-                    var patientElement = currentAppts.First();
-                    await Driver.ClickAsync(patientElement);
-
-                    // ClickEditDelete equivalent (matching legacy ClickEditDelete method)
-                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
-                    await Driver.ClickAsync(DeleteButton.Id(), 3);
-                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
-
-                    // Sleep(3000) - matching legacy ClickEditDelete
-                    await Task.Delay(3000);
-
-                    // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad)
-                    await WaitForAppointmentGridToLoadAsync();
-
-                    // Re-check appointment count for this patient after this delete
-                    var remainingAppts = await Driver.FindAllElementsAsync(
-                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
-                        By.XPath(patientAppointmentXpath),
-                        10);
-                    var countAfter = remainingAppts.Count;
-                    Log.Information($"Appointment count for {_currentPatient.Name} after delete iteration: {countAfter}");
-
-                    if (countAfter >= countBefore)
-                    {
-                        Log.Error($"Appointment count did not decrease after delete iteration. Before: {countBefore}, After: {countAfter}");
-                        // break to avoid infinite loop
-                        break;
-                    }
-                }
-            }
-            catch
-            {
-                // Don't log here - let BaseTest.HandleTestFailureAsync handle error logging
-                // to avoid duplicate error messages
-                throw;
-            }
-
-            return this;
-        }
-
-        public async Task<PortalPage> VerifyPatientAppointmentExistsAsync(bool shouldClick)
-        {
-            if (_currentPatient == null)
-            {
-                Log.Warning("VerifyPatientAppointmentExistsAsync called before CheckInPatientAsync; skipping check.");
-                return this;
-            }
-
-            // Match behavior: format XPath with patient last name and appointment time
-            // First, get the appointment time from the schedule for this patient
-            var patientNameOnSchedule = $" {_currentPatient.LastName}, {_currentPatient.FirstName} ";
-            
-            // Find the patient row and extract appointment time
-            var patientRowXpath = string.Format(PatientRowWithLastNameXpath, _currentPatient.LastName);
-            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
-            
-            // Extract appointment time from the row and store it (matching AppointmentTime field)
-            var appointmentTimeSpan = patientRow.FindElement(By.XPath(AppointmentTimeSpanXpath));
-            _appointmentTime = " " + appointmentTimeSpan.Text.Trim() + " ";
-            
-            // Format XPath matching legacy: PatientWithApptTimeAndNameXpath with patient last name and appointment time
-            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
-            
-            // Wait for element to appear (matching WaitForElementToAppear)
-            Log.Step($"{patientNameOnSchedule} scheduled for {_appointmentTime}");
-            await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
-
-            if (shouldClick)
-            {
-                // Click on the scheduled patient appointment
-                Log.Step("Clicking patient's appointment");
-                await Driver.ClickAsync(scheduledPatientXpath.XPath(), 15);
-                
-                // Wait for edit appointment button to appear
-                Log.Step("Waiting for Edit Appointment Button");
-                await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// Changes the visit type for a patient found by lastName.
-        /// Similar to EditAppointmentAsync pattern - finds patient by lastName and changes visit type.
-        /// </summary>
-        public async Task<PortalPage> ChangeVisitTypeForPatientAsync(string lastName, string newVisitType)
-        {
-            Log.Step($"Change visit type to '{newVisitType}' for patient with last name: {lastName}");
-
-            // Find and click the patient by lastName (similar to EditAppointmentAsync)
-            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
-            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
-
-            // Verify existing appointment and that initial visit type is "Well Visit"
-            await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
-            var initialVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
-            Log.Information($"Initial visit type: {initialVisitType}");
-
-            // Click Edit Appointment
-            await Driver.ClickAsync(EditAppointmentButton.Id());
-
-            // Verify 'Well' is selected by default in the 'Visit Type' dropdown
-            await Driver.WaitUntilElementLoadsAsync(VisitTypeWellXpath.XPath(), 15);
-            await Task.Delay(1000); // Matching Sleep(1000)
-
-            // Open the Visit Type dropdown
-            await Driver.WaitUntilElementLoadsAsync(VisitTypeDropdownArrow.XPath(), 15);
-            await Driver.ClickAsync(VisitTypeDropdownArrow.XPath());
-
-            // Select the new visit type
-            var visitTypeOptionXpath = string.Format(VisitTypeOption, newVisitType);
-            await Driver.WaitUntilElementLoadsAsync(visitTypeOptionXpath.XPath(), 15);
-            var visitTypeOption = await Driver.FindElementAsync(visitTypeOptionXpath.XPath(), 15);
-            await Driver.ClickAsync(visitTypeOption);
-
-            // Save and close the modal
-            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
-            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
-            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
-
-            // Re-verify the appointment exists and visit type updated
-            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
-            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
-            await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
-            var updatedVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
-            var expectedVisitType = $"{newVisitType} Visit";
-
-            if (updatedVisitType != expectedVisitType)
-            {
-                Log.Error($"Visit type did not update correctly. Expected: {expectedVisitType}, Actual: {updatedVisitType}");
-                throw new Exception($"Visit type verification failed. Expected: {expectedVisitType}, Actual: {updatedVisitType}");
-            }
-
-            Log.Step($"Visit type successfully changed to '{updatedVisitType}'.");
-
-            return this;
-        }
-
-        public async Task<PortalPage> VerifyPatientIsNotListedAsync()
-        {
-            if (_currentPatient == null)
-            {
-                Log.Warning("VerifyPatientIsNotListedAsync called before CheckInPatientAsync; skipping check.");
-                return this;
-            }
-
-            var exists = await IsPatientInScheduleAsync(_currentPatient.LastName, _currentPatient.Name);
-
-            if (exists)
-            {
-                Log.Error($"Patient {_currentPatient.Name} is still listed in the schedule when they should not be.");
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// <summary>
-        /// Verifies the visit type displayed in the patient information modal.
-        /// </summary>
-        public async Task<PortalPage> VerifyVisitTypeAsync(string expectedVisitType)
-        {
-            if (_currentPatient == null)
-            {
-                Log.Warning("VerifyVisitTypeAsync called before CheckInPatientAsync; skipping verification.");
-                return this;
-            }
-
-            try
-            {
-                Log.Step($"Verify visit type is '{expectedVisitType}'.");
-
-                // Ensure patient info modal is open
-                await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
-                var actualVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
-
-                var expectedVisitTypeText = expectedVisitType.EndsWith(" Visit") ? expectedVisitType : $"{expectedVisitType} Visit";
-
-                if (actualVisitType != expectedVisitTypeText)
-                {
-                    Log.Error($"Visit type verification failed. Expected: {expectedVisitTypeText}, Actual: {actualVisitType}");
-                    throw new Exception($"Visit type verification failed. Expected: {expectedVisitTypeText}, Actual: {actualVisitType}");
-                }
-
-                Log.Step($"Visit type verified as '{actualVisitType}'.");
-            }
-            catch (Exception ex)
-            {
-                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"VerifyVisitTypeAsync failed for visit type '{expectedVisitType}'", Driver);
-                throw;
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// Changes the provider for a patient appointment found by lastName.
-        /// Similar to ChangeVisitTypeForPatientAsync pattern.
-        /// </summary>
-        public async Task<PortalPage> ChangeProviderForPatientAsync(string lastName, string newProviderName)
-        {
-            Log.Step($"Change provider to '{newProviderName}' for patient with last name: {lastName}");
-
-            // Click on the patient appointment to open the patient info modal
-            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
-            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
-
-            // Click the "Edit Appointment" button
-            await Driver.ClickAsync(EditAppointmentButton.Id());
-
-            // Wait for provider field, click to open dropdown, clear, type and select from dropdown
-            await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
-            await Driver.ClickAsync(ProviderTextBoxId.Id());
-            await Task.Delay(500);
-            var providerLastName = newProviderName.Split(' ').Last();
-            Log.Information($"Clearing and typing provider last name '{providerLastName}' (selecting {newProviderName})");
-            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
-            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
-            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
-            await Task.Delay(3000); // Wait for dropdown options to appear
-
-            // Click the option inside the open overlay
-            var providerOptionXpath = string.Format(ProviderOptionInOverlay, newProviderName);
-            Log.Information($"Waiting for provider option '{newProviderName}' in dropdown");
-            await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
-            Log.Information($"Clicking provider option '{newProviderName}'");
-            await Driver.ClickAsync(providerOptionXpath.XPath());
-
-            // Wait for provider to be selected
-            Log.Information("Waiting for provider to be confirmed as selected");
-            await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
-            Log.Information($"✓ Successfully selected provider: {newProviderName}");
-
-            // Click "Save"
-            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
-            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
-            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
-
-            Log.Step($"Provider successfully changed to '{newProviderName}'.");
-
-            return this;
-        }
-
-        /// <summary>
-        /// Verifies that the provider name appears in the scheduler grid for the patient's appointment.
-        /// Matches legacy: use PatientWithApptTimeAndNameXpath + provider cell, with appointment time from the row.
-        /// </summary>
-        public async Task<PortalPage> VerifyProviderInSchedulerGridAsync(string lastName, string expectedProviderName)
-        {
-            Log.Step($"Verify provider '{expectedProviderName}' appears in scheduler grid for patient {lastName}");
-
-            // Wait for grid to refresh after provider change (e.g. save, modal close)
-            await Task.Delay(3000);
-            Log.Information("Waiting for patient row and provider cell to load...");
-
-            var patientNameInGrid = $" {lastName}, ";
-            var patientRowXpath = string.Format(PatientRowWithLastNameXpath, lastName);
-            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 25);
-
-            // Get appointment time from the row (legacy uses this for ProviderXpath)
-            var timeSpans = patientRow.FindElements(By.XPath(AppointmentTimeSpanXpath));
-            if (timeSpans.Count == 0)
-            {
-                Log.Error($"No appointment time found in row for patient {lastName}");
-                throw new Exception($"Provider verification failed: no appointment time in row for patient {lastName}.");
-            }
-            var appointmentTimeText = timeSpans[0].Text.Trim();
-            var appointmentTimeFormatted = $" {appointmentTimeText} ";
-
-            // Wait for provider cell to show the updated name (longer timeout for grid update)
-            var providerXpath = string.Format(ProviderXpath, patientNameInGrid, appointmentTimeFormatted);
-            await Driver.WaitUntilElementLoadsAsync(providerXpath.XPath(), 25);
-            var providerElement = await Driver.FindElementAsync(providerXpath.XPath(), 5);
-            var actualProviderText = providerElement.Text.Trim();
-
-            if (!actualProviderText.Contains(expectedProviderName))
-            {
-                Log.Error($"Provider in grid is '{actualProviderText}', expected to contain '{expectedProviderName}' for patient {lastName}");
-                throw new Exception($"Provider verification failed. Expected provider '{expectedProviderName}' but grid shows '{actualProviderText}'.");
-            }
-
-            Log.Information($"✓ Provider '{expectedProviderName}' verified in scheduler grid: {actualProviderText}");
-            return this;
-        }
-
-        /// <summary>
-        /// Clicks the user dropdown (e.g. "Hi QA") and then "Log Out".
-        /// </summary>
-        public async Task<PortalPage> LogoutAsync()
-        {
-            Log.Step("Click the user dropdown (e.g. Hi QA).");
-            await Driver.WaitUntilElementLoadsAsync(UserDropdownButton.XPath(), 15);
-            await Driver.ClickAsync(UserDropdownButton.XPath());
-
-            Log.Step("Click 'Log Out'.");
-            await Driver.WaitUntilElementLoadsAsync(LogOutButton.XPath(), 10);
-            await Driver.ClickAsync(LogOutButton.XPath());
-
-            return this;
-        }
-
-        /// <summary>
-        /// Verifies that the Partner Log In screen is displayed (e.g. Okta discovery username field is present).
-        /// </summary>
-        public async Task<PortalPage> VerifyOnPartnerLogInScreenAsync()
-        {
-            Log.Step("Verify you land on the Partner Log In screen.");
-            await Driver.WaitUntilElementLoadsAsync(PartnerLogInScreenUsernameField.Id(), 15);
-            Log.Information("✓ Partner Log In screen is displayed (username field present).");
-            return this;
-        }
-
-        /// <summary>
-        /// Deletes all appointments/visits for a patient found by lastName.
-        /// Similar to DeleteAppointmentAsync but works with lastName parameter.
-        /// </summary>
-        public async Task<PortalPage> DeleteAllAppointmentsForPatientAsync(string lastName)
-        {
-            Log.Step($"Delete all appointments for patient with last name: {lastName}");
-
-            try
-            {
-                // Base XPath used for this patient's appointments in the grid
-                var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {lastName}, ");
-
-                while (true)
-                {
-                    // Find all current appointments for this patient
-                    var currentAppts = await Driver.FindAllElementsAsync(
-                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
-                        By.XPath(patientAppointmentXpath),
-                        10);
-
-                    var countBefore = currentAppts.Count;
-                    Log.Information($"Current appointment count for {lastName} before delete iteration: {countBefore}");
-
-                    // No more appointments for this patient – we're done
-                    if (countBefore == 0)
-                    {
-                        Log.Information($"No appointments found for {lastName}. Deletion complete.");
-                        break;
-                    }
-
-                    // Click first appointment for this patient
-                    var patientElement = currentAppts.First();
-                    await Driver.ClickAsync(patientElement);
-
-                    // ClickEditDelete equivalent
-                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
-                    await Driver.ClickAsync(DeleteButton.Id(), 3);
-                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
-
-                    // Sleep(3000)
-                    await Task.Delay(3000);
-
-                    // Wait for appointment grid to load
-                    await WaitForAppointmentGridToLoadAsync();
-
-                    // Re-check appointment count for this patient after this delete
-                    var remainingAppts = await Driver.FindAllElementsAsync(
-                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
-                        By.XPath(patientAppointmentXpath),
-                        10);
-                    var countAfter = remainingAppts.Count;
-                    Log.Information($"Appointment count for {lastName} after delete iteration: {countAfter}");
-
-                    if (countAfter >= countBefore)
-                    {
-                        Log.Error($"Appointment count did not decrease after delete iteration. Before: {countBefore}, After: {countAfter}");
-                        // break to avoid infinite loop
-                        break;
-                    }
-                }
-            }
-            catch
-            {
-                // Don't log here - let BaseTest.HandleTestFailureAsync handle error logging
-                // to avoid duplicate error messages
-                throw;
-            }
-
-            return this;
-        }
-    }
+        public async Task<PortalPage> EditAppointmentAsync(string lastName, int days)
+        {
+            // Use stored appointmentDate and add days (matching legacy behavior)
+            var date = _appointmentDate.AddDays(days).ToString("M/d/yyyy");
+
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.ClickAsync(EditAppointmentButton.Id(), 15);
+            await Driver.ClickAsync(DatePickerInput.Id(), 15);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), date);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 15);
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the count of patient appointments matching the current patient's last name and appointment time.
+        /// Matches GetPatientAppointmentsCount behavior.
+        /// </summary>
+        private async Task<int> GetPatientAppointmentsCountAsync()
+        {
+            if (_currentPatient == null || string.IsNullOrEmpty(_appointmentTime))
+            {
+                Log.Warning("GetPatientAppointmentsCountAsync: Missing patient or appointment time");
+                return 0;
+            }
+
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
+            // Use FindAllElementsAsync with parent and child selectors (matching legacy GetElements behavior).
+            // Use the main appointment grid container as parent instead of a specific table container
+            // to avoid failures when the inner structure changes.
+            var appointments = await Driver.FindAllElementsAsync(
+                AppointmentGridLoadedXpath.XPath(),
+                scheduledPatientXpath.XPath(),
+                10);
+
+            return appointments.Count;
+        }
+
+        public async Task<PortalPage> ChangeScheduleDateAsync(int days)
+        {
+            Log.Step($"Change schedule date by {days} days.");
+            _appointmentDate = DateTime.Today.AddDays(days);
+            for (int i = 0; i < days; i++)
+            {
+                await Driver.ClickAsync(ArrowButton.XPath());
+            }
+            return this;
+        }
+
+        // ===== Helpers for VerifyAppointmentLocationAndDayCanBeChanged =====
+
+        public async Task<PortalPage> ChangeToDaysInAdvanceAsync(int numberOfDays)
+        {
+            // Store appointment date (matching legacy behavior)
+            _appointmentDate = DateTime.Today.AddDays(numberOfDays);
+            // Reuse existing schedule change helper
+            return await ChangeScheduleDateAsync(numberOfDays);
+        }
+
+        /// <summary>
+        /// Deletes all appointments/visits in the schedule table before check-in.
+        /// Matches DeleteAllAppointments() implementation exactly.
+        /// </summary>
+        public async Task<PortalPage> DeleteAllPatientAppointmentsAsync(TestPatient? patient = null)
+        {
+            string patientContext = patient != null ? $" for patient: {patient.Name}" : "";
+            Log.Step($"Delete all appointments in schedule{patientContext}");
+
+            try
+            {
+                // If the appointment table itself is not present, there is nothing to delete.
+                // Do NOT fail the test in this case – just log and exit.
+                var tableExists = await Driver.ElementExistsAsync(AppointmentTable.Id(), shouldLog: false);
+                if (!tableExists)
+                {
+                    Log.Warning("DeleteAllPatientAppointmentsAsync: Appointment table not found. Skipping delete.");
+                    return this;
+                }
+
+                // Get all appointment rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
+                var checkedInPatientRows = await Driver.FindAllElementsAsync(
+                    AppointmentTable.Id(),
+                    AppointmentRow.XPath(),
+                    15);
+
+                while (checkedInPatientRows.Count > 0)
+                {
+                    // Click first row (matching legacy: CheckedInPatientRows[0].Click())
+                    await Driver.ClickAsync(checkedInPatientRows[0]);
+
+                    // ClickEditDelete (matching legacy ClickEditDelete method exactly)
+                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                    await Driver.ClickAsync(DeleteButton.Id(), 3);
+                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+                    await Task.Delay(3000); // Sleep(3000) from legacy
+
+                    // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
+                    await WaitForAppointmentGridToLoadAsync();
+
+                    // Re-fetch all rows (matching legacy: CheckedInPatientRows = GetElements(apptRow, ElementType.XPath))
+                    checkedInPatientRows = await Driver.FindAllElementsAsync(
+                        AppointmentTable.Id(),
+                        AppointmentRow.XPath(),
+                        15);
+                }
+            }
+            catch (Exception ex)
+            {
+                string patientName = patient?.Name ?? "all patients";
+                Log.Warning($"Failed to delete all appointments for {patientName}. Continuing with check-in.");
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"DeleteAllPatientAppointmentsAsync error for {patientName}", Driver);
+                // Don't throw - allow check-in to proceed even if deletion fails
+            }
+
+            return this;
+        }
+
+        public async Task<PortalPage> CheckInPatientAsync(TestPatient patient)
+        {
+            Log.Step($"Check in patient: {patient.Name}");
+
+            // Delete any existing appointments for this patient before check-in
+            await DeleteAllPatientAppointmentsAsync(patient);
+
+            _currentPatient = patient;
+
+            // Use existing helper to add an appointment for this patient.
+            // We create the patient via UI to match behavior.
+            await AddAppointmentToScheduleAsync(patient, createNewPatient: true);
+            return this;
+        }
+
+        /// <summary>
+        /// Changes the clinic/location on the appointment for the patient found by lastName.
+        /// Same pattern as ChangeVisitTypeForPatientAsync(lastName, newVisitType).
+        /// </summary>
+        public async Task<PortalPage> ChangeLocationOnAppointmentAsync(string lastName, string newLocation)
+        {
+            Log.Step($"Change location on appointment for patient with last name '{lastName}' to '{newLocation}'.");
+
+            // Set _currentPatient so downstream steps (VerifyPatientIsNotListedAsync, VerifyPatientAppointmentExistsAsync, ChangeDateOnAppointmentAsync) work.
+            _currentPatient = new TestPatient { LastName = lastName, FirstName = "" };
+
+            // Find and click the patient by lastName (same pattern as ChangeVisitTypeForPatientAsync)
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
+
+            // Open Edit Appointment
+            await Driver.ClickAsync(EditAppointmentButton.Id());
+
+            // Open the clinic/location dropdown (wait to avoid timing issues)
+            await Driver.WaitUntilElementLoadsAsync(ClinicDropdown.XPath(), 15);
+            await Driver.ClickAsync(ClinicDropdown.XPath());
+
+            // Select the desired location option
+            var locationSelector = string.Format(SpanWithText, newLocation);
+            await Driver.WaitUntilElementLoadsAsync(locationSelector.XPath(), 15);
+            await Driver.ClickAsync(locationSelector.XPath());
+
+            // Save changes and wait for the patient info window to close
+            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+
+            return this;
+        }
+
+        public async Task<PortalPage> ChangeLocationOnPortalAsync(string newLocation)
+        {
+            // Mimic Portal2Schedule.ChangeLocationOnPortal:
+            // 1. Open the clinic selector dropdown
+            // 2. Type the clinic/location name into the search box
+            // 3. Select the matching option
+            // 4. Verify the selector shows the new location
+
+            Log.Step($"Change portal location to '{newLocation}'.");
+
+            // Open clinic selector
+            await Driver.ClickAsync(ClinicSelector.XPath());
+
+            // Type into the clinic search box
+            await Driver.SendKeysAsync(ClinicSearchBox.XPath(), newLocation);
+
+            // Click the matching option
+            await Driver.ClickAsync(string.Format(ClinicOption, newLocation).XPath());
+
+            // Verify the selected clinic text contains the new location
+            var selectedClinicXpath = $"//mat-select[@id='clinicSelector']//span[contains(text(),'{newLocation}')]";
+            var locationChanged = await Driver.IsElementPresentAsync(selectedClinicXpath.XPath(), 5);
+            if (!locationChanged)
+            {
+                Log.Error($"Clinic location did not change to '{newLocation}'.");
+            }
+
+            return this;
+        }
+
+        public async Task<PortalPage> ChangeDateOnAppointmentAsync(int numberOfDays)
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("ChangeDateOnAppointmentAsync called before CheckInPatientAsync; skipping date change.");
+                return this;
+            }
+
+            // Get appointment count BEFORE change (matching legacy behavior)
+            int totalAppts = await GetPatientAppointmentsCountAsync();
+            Log.Information($"Appointment count before date change: {totalAppts}");
+
+            // Click first appointment in list (matching appointments[0].Click())
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime ?? "");
+            var firstAppointment = await Driver.FindElementAsync(scheduledPatientXpath.XPath(), 15);
+            await Driver.ClickAsync(firstAppointment);
+
+            // Edit appointment
+            await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+
+            // Calculate new date using stored appointmentDate (matching behavior)
+            string newAppointmentDateString = _appointmentDate.AddDays(numberOfDays).ToString("M/d/yyyy");
+            await Driver.ClickAsync(DatePickerInput.Id());
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Control + "a");
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Delete);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), newAppointmentDateString);
+            await Driver.SendKeysAsync(DatePickerInput.Id(), Keys.Enter);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+            // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad())
+            await WaitForAppointmentGridToLoadAsync();
+
+            // Get appointment count AFTER change and verify it dropped by 1
+            int currentApptCount = await GetPatientAppointmentsCountAsync();
+            Log.Information($"Appointment count after date change: {currentApptCount}");
+
+            if (currentApptCount != totalAppts - 1)
+            {
+                Log.Error($"Appointment count did not drop after moving an appointment to {numberOfDays} days. Expected: {totalAppts - 1}, Actual: {currentApptCount}");
+            }
+
+            return this;
+        }
+
+        public async Task<PortalPage> DeleteAppointmentAsync()
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("DeleteAppointmentAsync called before CheckInPatientAsync; skipping delete.");
+                return this;
+            }
+
+            try
+            {
+                // DeleteAppointment deletes one appointment; here we keep deleting
+                // for the current patient until no appointments remain for that patient.
+
+                // Base XPath used for this patient's appointments in the grid
+                var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {_currentPatient.LastName}, ");
+
+                while (true)
+                {
+                    // Find all current appointments for this patient
+                    var currentAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+
+                    var countBefore = currentAppts.Count;
+                    Log.Information($"Current appointment count for {_currentPatient.Name} before delete iteration: {countBefore}");
+
+                    // No more appointments for this patient – we're done
+                    if (countBefore == 0)
+                    {
+                        break;
+                    }
+
+                    // Click first appointment for this patient (equivalent to legacy ClickSimple)
+                    var patientElement = currentAppts.First();
+                    await Driver.ClickAsync(patientElement);
+
+                    // ClickEditDelete equivalent (matching legacy ClickEditDelete method)
+                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                    await Driver.ClickAsync(DeleteButton.Id(), 3);
+                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+                    // Sleep(3000) - matching legacy ClickEditDelete
+                    await Task.Delay(3000);
+
+                    // Wait for appointment grid to load (matching legacy WaitForAppointmentGridToLoad)
+                    await WaitForAppointmentGridToLoadAsync();
+
+                    // Re-check appointment count for this patient after this delete
+                    var remainingAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+                    var countAfter = remainingAppts.Count;
+                    Log.Information($"Appointment count for {_currentPatient.Name} after delete iteration: {countAfter}");
+
+                    if (countAfter >= countBefore)
+                    {
+                        Log.Error($"Appointment count did not decrease after delete iteration. Before: {countBefore}, After: {countAfter}");
+                        // break to avoid infinite loop
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Don't log here - let BaseTest.HandleTestFailureAsync handle error logging
+                // to avoid duplicate error messages
+                throw;
+            }
+
+            return this;
+        }
+
+        public async Task<PortalPage> VerifyPatientAppointmentExistsAsync(bool shouldClick)
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("VerifyPatientAppointmentExistsAsync called before CheckInPatientAsync; skipping check.");
+                return this;
+            }
+
+            // Match behavior: format XPath with patient last name and appointment time
+            // First, get the appointment time from the schedule for this patient
+            var patientNameOnSchedule = $" {_currentPatient.LastName}, {_currentPatient.FirstName} ";
+
+            // Find the patient row and extract appointment time
+            var patientRowXpath = string.Format(PatientRowWithLastNameXpath, _currentPatient.LastName);
+            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 15);
+
+            // Extract appointment time from the row and store it (matching AppointmentTime field)
+            var appointmentTimeSpan = patientRow.FindElement(By.XPath(AppointmentTimeSpanXpath));
+            _appointmentTime = " " + appointmentTimeSpan.Text.Trim() + " ";
+
+            // Format XPath matching legacy: PatientWithApptTimeAndNameXpath with patient last name and appointment time
+            var scheduledPatientXpath = string.Format(PatientWithApptTimeAndNameXpath, $" {_currentPatient.LastName}, ", _appointmentTime);
+
+            // Wait for element to appear (matching WaitForElementToAppear)
+            Log.Step($"{patientNameOnSchedule} scheduled for {_appointmentTime}");
+            await Driver.WaitUntilElementLoadsAsync(scheduledPatientXpath.XPath(), 15);
+
+            if (shouldClick)
+            {
+                // Click on the scheduled patient appointment
+                Log.Step("Clicking patient's appointment");
+                await Driver.ClickAsync(scheduledPatientXpath.XPath(), 15);
+
+                // Wait for edit appointment button to appear
+                Log.Step("Waiting for Edit Appointment Button");
+                await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Changes the visit type for a patient found by lastName.
+        /// Similar to EditAppointmentAsync pattern - finds patient by lastName and changes visit type.
+        /// </summary>
+        public async Task<PortalPage> ChangeVisitTypeForPatientAsync(string lastName, string newVisitType)
+        {
+            Log.Step($"Change visit type to '{newVisitType}' for patient with last name: {lastName}");
+
+            // Find and click the patient by lastName (similar to EditAppointmentAsync)
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
+
+            // Verify existing appointment and that initial visit type is "Well Visit"
+            await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
+            var initialVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
+            Log.Information($"Initial visit type: {initialVisitType}");
+
+            // Click Edit Appointment
+            await Driver.ClickAsync(EditAppointmentButton.Id());
+
+            // Verify 'Well' is selected by default in the 'Visit Type' dropdown
+            await Driver.WaitUntilElementLoadsAsync(VisitTypeWellXpath.XPath(), 15);
+            await Task.Delay(1000); // Matching Sleep(1000)
+
+            // Open the Visit Type dropdown
+            await Driver.WaitUntilElementLoadsAsync(VisitTypeDropdownArrow.XPath(), 15);
+            await Driver.ClickAsync(VisitTypeDropdownArrow.XPath());
+
+            // Select the new visit type
+            var visitTypeOptionXpath = string.Format(VisitTypeOption, newVisitType);
+            await Driver.WaitUntilElementLoadsAsync(visitTypeOptionXpath.XPath(), 15);
+            var visitTypeOption = await Driver.FindElementAsync(visitTypeOptionXpath.XPath(), 15);
+            await Driver.ClickAsync(visitTypeOption);
+
+            // Save and close the modal
+            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+
+            // Re-verify the appointment exists and visit type updated
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
+            await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
+            var updatedVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
+            var expectedVisitType = $"{newVisitType} Visit";
+
+            if (updatedVisitType != expectedVisitType)
+            {
+                Log.Error($"Visit type did not update correctly. Expected: {expectedVisitType}, Actual: {updatedVisitType}");
+                throw new Exception($"Visit type verification failed. Expected: {expectedVisitType}, Actual: {updatedVisitType}");
+            }
+
+            Log.Step($"Visit type successfully changed to '{updatedVisitType}'.");
+
+            return this;
+        }
+
+        public async Task<PortalPage> VerifyPatientIsNotListedAsync()
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("VerifyPatientIsNotListedAsync called before CheckInPatientAsync; skipping check.");
+                return this;
+            }
+
+            var exists = await IsPatientInScheduleAsync(_currentPatient.LastName, _currentPatient.Name);
+
+            if (exists)
+            {
+                Log.Error($"Patient {_currentPatient.Name} is still listed in the schedule when they should not be.");
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// <summary>
+        /// Verifies the visit type displayed in the patient information modal.
+        /// </summary>
+        public async Task<PortalPage> VerifyVisitTypeAsync(string expectedVisitType)
+        {
+            if (_currentPatient == null)
+            {
+                Log.Warning("VerifyVisitTypeAsync called before CheckInPatientAsync; skipping verification.");
+                return this;
+            }
+
+            try
+            {
+                Log.Step($"Verify visit type is '{expectedVisitType}'.");
+
+                // Ensure patient info modal is open
+                await Driver.WaitUntilElementLoadsAsync(VisitTypeDisplayText.XPath(), 15);
+                var actualVisitType = await Driver.GetTextAsync(VisitTypeDisplayText.XPath(), 15);
+
+                var expectedVisitTypeText = expectedVisitType.EndsWith(" Visit") ? expectedVisitType : $"{expectedVisitType} Visit";
+
+                if (actualVisitType != expectedVisitTypeText)
+                {
+                    Log.Error($"Visit type verification failed. Expected: {expectedVisitTypeText}, Actual: {actualVisitType}");
+                    throw new Exception($"Visit type verification failed. Expected: {expectedVisitTypeText}, Actual: {actualVisitType}");
+                }
+
+                Log.Step($"Visit type verified as '{actualVisitType}'.");
+            }
+            catch (Exception ex)
+            {
+                await ErrorLoggingHelper.LogErrorWithContextAsync(Log, ex, $"VerifyVisitTypeAsync failed for visit type '{expectedVisitType}'", Driver);
+                throw;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Changes the provider for a patient appointment found by lastName.
+        /// Similar to ChangeVisitTypeForPatientAsync pattern.
+        /// </summary>
+        public async Task<PortalPage> ChangeProviderForPatientAsync(string lastName, string newProviderName)
+        {
+            Log.Step($"Change provider to '{newProviderName}' for patient with last name: {lastName}");
+
+            // Click on the patient appointment to open the patient info modal
+            await Driver.ClickAsync(string.Format(DivWithText, lastName).XPath());
+            await Driver.WaitUntilElementLoadsAsync(EditAppointmentButton.Id(), 15);
+
+            // Click the "Edit Appointment" button
+            await Driver.ClickAsync(EditAppointmentButton.Id());
+
+            // Wait for provider field, click to open dropdown, clear, type and select from dropdown
+            await Driver.WaitUntilElementLoadsAsync(ProviderTextBoxId.Id(), 15);
+            await Driver.ClickAsync(ProviderTextBoxId.Id());
+            await Task.Delay(500);
+            var providerLastName = newProviderName.Split(' ').Last();
+            Log.Information($"Clearing and typing provider last name '{providerLastName}' (selecting {newProviderName})");
+            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Control + "a");
+            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), Keys.Delete);
+            await Driver.SendKeysAsync(ProviderTextBoxId.Id(), providerLastName);
+            await Task.Delay(3000); // Wait for dropdown options to appear
+
+            // Click the option inside the open overlay
+            var providerOptionXpath = string.Format(ProviderOptionInOverlay, newProviderName);
+            Log.Information($"Waiting for provider option '{newProviderName}' in dropdown");
+            await Driver.WaitUntilElementLoadsAsync(providerOptionXpath.XPath(), 15);
+            Log.Information($"Clicking provider option '{newProviderName}'");
+            await Driver.ClickAsync(providerOptionXpath.XPath());
+
+            // Wait for provider to be selected
+            Log.Information("Waiting for provider to be confirmed as selected");
+            await Driver.WaitUntilElementLoadsAsync(ProviderSelected.XPath(), 15);
+            Log.Information($"✓ Successfully selected provider: {newProviderName}");
+
+            // Click "Save"
+            await Driver.WaitUntilElementLoadsAsync(PatientInfoSaveButton.XPath(), 15);
+            await Driver.ClickAsync(PatientInfoSaveButton.XPath());
+            await Driver.WaitForElementToDisappearAsync(PatientInfoWindow.XPath(), 15);
+
+            Log.Step($"Provider successfully changed to '{newProviderName}'.");
+
+            return this;
+        }
+
+        /// <summary>
+        /// Verifies that the provider name appears in the scheduler grid for the patient's appointment.
+        /// Matches legacy: use PatientWithApptTimeAndNameXpath + provider cell, with appointment time from the row.
+        /// </summary>
+        public async Task<PortalPage> VerifyProviderInSchedulerGridAsync(string lastName, string expectedProviderName)
+        {
+            Log.Step($"Verify provider '{expectedProviderName}' appears in scheduler grid for patient {lastName}");
+
+            // Wait for grid to refresh after provider change (e.g. save, modal close)
+            await Task.Delay(3000);
+            Log.Information("Waiting for patient row and provider cell to load...");
+
+            var patientNameInGrid = $" {lastName}, ";
+            var patientRowXpath = string.Format(PatientRowWithLastNameXpath, lastName);
+            var patientRow = await Driver.FindElementAsync(patientRowXpath.XPath(), 25);
+
+            // Get appointment time from the row (legacy uses this for ProviderXpath)
+            var timeSpans = patientRow.FindElements(By.XPath(AppointmentTimeSpanXpath));
+            if (timeSpans.Count == 0)
+            {
+                Log.Error($"No appointment time found in row for patient {lastName}");
+                throw new Exception($"Provider verification failed: no appointment time in row for patient {lastName}.");
+            }
+            var appointmentTimeText = timeSpans[0].Text.Trim();
+            var appointmentTimeFormatted = $" {appointmentTimeText} ";
+
+            // Wait for provider cell to show the updated name (longer timeout for grid update)
+            var providerXpath = string.Format(ProviderXpath, patientNameInGrid, appointmentTimeFormatted);
+            await Driver.WaitUntilElementLoadsAsync(providerXpath.XPath(), 25);
+            var providerElement = await Driver.FindElementAsync(providerXpath.XPath(), 5);
+            var actualProviderText = providerElement.Text.Trim();
+
+            if (!actualProviderText.Contains(expectedProviderName))
+            {
+                Log.Error($"Provider in grid is '{actualProviderText}', expected to contain '{expectedProviderName}' for patient {lastName}");
+                throw new Exception($"Provider verification failed. Expected provider '{expectedProviderName}' but grid shows '{actualProviderText}'.");
+            }
+
+            Log.Information($"✓ Provider '{expectedProviderName}' verified in scheduler grid: {actualProviderText}");
+            return this;
+        }
+
+        /// <summary>
+        /// Clicks the user dropdown (e.g. "Hi QA") and then "Log Out".
+        /// </summary>
+        public async Task<PortalPage> LogoutAsync()
+        {
+            Log.Step("Click the user dropdown (e.g. Hi QA).");
+            await Driver.WaitUntilElementLoadsAsync(UserDropdownButton.XPath(), 15);
+            await Driver.ClickAsync(UserDropdownButton.XPath());
+
+            Log.Step("Click 'Log Out'.");
+            await Driver.WaitUntilElementLoadsAsync(LogOutButton.XPath(), 10);
+            await Driver.ClickAsync(LogOutButton.XPath());
+
+            return this;
+        }
+
+        /// <summary>
+        /// Verifies that the Partner Log In screen is displayed (e.g. Okta discovery username field is present).
+        /// </summary>
+        public async Task<PortalPage> VerifyOnPartnerLogInScreenAsync()
+        {
+            Log.Step("Verify you land on the Partner Log In screen.");
+            await Driver.WaitUntilElementLoadsAsync(PartnerLogInScreenUsernameField.Id(), 15);
+            Log.Information("✓ Partner Log In screen is displayed (username field present).");
+            return this;
+        }
+
+        /// <summary>
+        /// Deletes all appointments/visits for a patient found by lastName.
+        /// Similar to DeleteAppointmentAsync but works with lastName parameter.
+        /// </summary>
+        public async Task<PortalPage> DeleteAllAppointmentsForPatientAsync(string lastName)
+        {
+            Log.Step($"Delete all appointments for patient with last name: {lastName}");
+
+            try
+            {
+                // Base XPath used for this patient's appointments in the grid
+                var patientAppointmentXpath = string.Format(PatientAppointmentOnSchedulerXpath, $" {lastName}, ");
+
+                while (true)
+                {
+                    // Find all current appointments for this patient
+                    var currentAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+
+                    var countBefore = currentAppts.Count;
+                    Log.Information($"Current appointment count for {lastName} before delete iteration: {countBefore}");
+
+                    // No more appointments for this patient – we're done
+                    if (countBefore == 0)
+                    {
+                        Log.Information($"No appointments found for {lastName}. Deletion complete.");
+                        break;
+                    }
+
+                    // Click first appointment for this patient
+                    var patientElement = currentAppts.First();
+                    await Driver.ClickAsync(patientElement);
+
+                    // ClickEditDelete equivalent
+                    await Driver.ClickAsync(EditAppointmentButton.Id(), 2);
+                    await Driver.ClickAsync(DeleteButton.Id(), 3);
+                    await Driver.ClickAsync(PatientInfoSaveButton.XPath(), 2);
+
+                    // Sleep(3000)
+                    await Task.Delay(3000);
+
+                    // Wait for appointment grid to load
+                    await WaitForAppointmentGridToLoadAsync();
+
+                    // Re-check appointment count for this patient after this delete
+                    var remainingAppts = await Driver.FindAllElementsAsync(
+                        By.XPath("//tbody[contains(@class,'ng-tns')]"),
+                        By.XPath(patientAppointmentXpath),
+                        10);
+                    var countAfter = remainingAppts.Count;
+                    Log.Information($"Appointment count for {lastName} after delete iteration: {countAfter}");
+
+                    if (countAfter >= countBefore)
+                    {
+                        Log.Error($"Appointment count did not decrease after delete iteration. Before: {countBefore}, After: {countAfter}");
+                        // break to avoid infinite loop
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Don't log here - let BaseTest.HandleTestFailureAsync handle error logging
+                // to avoid duplicate error messages
+                throw;
+            }
+
+            return this;
+        }
+    }
 }
