@@ -174,8 +174,7 @@ namespace VaxCare.Pages.CommunityEvents
                 await Task.Delay(2000); // Wait for UI to update
                 
                 // Verify insurance fields are now hidden
-                await Driver.WaitUntilElementLoadsAsync(hiddenInsuranceContainer.XPath());
-                await Driver.WaitUntilElementLoadsAsync(hiddenPrimaryInsuranceInput.XPath());
+                await Driver.VerifyElementsPresentOnPageAsync(hiddenInsuranceContainer, hiddenPrimaryInsuranceInput);
             }
             else
             {

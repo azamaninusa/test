@@ -185,6 +185,36 @@ namespace VaxCare.Core.WebDriver
         }
 
         /// <summary>
+        /// Verifies that each of the given XPath selectors finds at least one element on the page.
+        /// Similar to legacy VerifyElementsPresentOnPage(params string[] elemxpaths).
+        /// </summary>
+        /// <param name="actor">The web driver actor.</param>
+        /// <param name="timeoutInSeconds">Seconds to wait for each element (default 10).</param>
+        /// <param name="elemXpaths">One or more XPath strings to verify.</param>
+        /// <exception cref="Exception">Thrown when any element could not be found on the page.</exception>
+        public static async Task VerifyElementsPresentOnPageAsync(
+            this IWebDriverActor actor, int timeoutInSeconds, params string[] elemXpaths)
+        {
+            foreach (var xpath in elemXpaths)
+            {
+                var by = By.XPath(xpath);
+                var present = await actor.IsElementPresentAsync(by, timeoutInSeconds, shouldLog: false);
+                if (!present)
+                    throw new Exception($"The element could not be found on page: {xpath}");
+            }
+        }
+
+        /// <summary>
+        /// Verifies that each of the given XPath selectors finds at least one element on the page.
+        /// Uses default timeout of 10 seconds per element.
+        /// </summary>
+        public static async Task VerifyElementsPresentOnPageAsync(
+            this IWebDriverActor actor, params string[] elemXpaths)
+        {
+            await actor.VerifyElementsPresentOnPageAsync(10, elemXpaths);
+        }
+
+        /// <summary>
         /// Checks if the Element for the given Selector contains the expected Text,
         /// </summary>
         /// <returns> True or False if the Text matches. </returns>
