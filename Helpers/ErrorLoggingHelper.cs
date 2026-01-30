@@ -15,6 +15,10 @@ namespace VaxCare.Core.Helpers
         /// <summary>
         /// Logs error details including method name, file location, current URL, and exception details
         /// </summary>
+        /// <param name="logger">Serilog logger instance used to write error output.</param>
+        /// <param name="ex">The exception that was thrown; used for message, type, and stack trace.</param>
+        /// <param name="errorMessage">Short description of the failure context (e.g. which operation failed).</param>
+        /// <param name="driver">Optional WebDriver; when provided, the current page URL is included in the log.</param>
         public static void LogErrorWithContext(
             ILogger logger,
             Exception ex,
@@ -52,6 +56,8 @@ namespace VaxCare.Core.Helpers
         /// <summary>
         /// Gets the current URL from the driver
         /// </summary>
+        /// <param name="driver">WebDriver instance; may be null.</param>
+        /// <returns>Current page URL, or "N/A" if driver is null or URL cannot be retrieved.</returns>
         private static string GetCurrentUrl(IWebDriver? driver)
         {
             try
@@ -72,6 +78,8 @@ namespace VaxCare.Core.Helpers
         /// Extracts method name, file name, and line number from exception stack trace
         /// Looks for the actual method in the fluent chain, not just wrapper methods
         /// </summary>
+        /// <param name="ex">Exception whose stack trace is analyzed.</param>
+        /// <returns>Tuple of (method name, source file path, line number).</returns>
         private static (string methodName, string fileName, int lineNumber) GetStackTraceInfo(Exception ex)
         {
             // Check if exception message contains chain step info
@@ -262,6 +270,8 @@ namespace VaxCare.Core.Helpers
         /// <summary>
         /// Formats stack trace lines to include clickable file:// URLs for file paths and line numbers
         /// </summary>
+        /// <param name="stackTrace">Raw stack trace string (e.g. ex.StackTrace).</param>
+        /// <returns>Stack trace with file paths converted to clickable file:// URLs.</returns>
         private static string FormatStackTraceWithClickableLinks(string stackTrace)
         {
             if (string.IsNullOrEmpty(stackTrace))
