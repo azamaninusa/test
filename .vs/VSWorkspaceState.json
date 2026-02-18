@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Helpers",
+    "\\VaxCare.Core",
+    "\\VaxCare.Pages",
+    "\\VaxCare.Pages\\CommunityEvents",
+    "\\VaxCare.Pages\\Portal",
+    "\\VaxCare.Tests\\CommunityEvents",
+    "\\VaxCare.Tests\\Portal",
+    "\\WebDriver"
+  ],
+  "SelectedNode": "\\WebDriver\\WebDriverActor.cs",
+  "PreviewInSolutionExplorer": false
+}
