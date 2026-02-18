@@ -1,0 +1,103 @@
+name: NightlyBilling - Docker Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - "NightlyBilling/**"
+      - ".github/workflows/nb-docker-tests.yml"
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - "NightlyBilling/**"
+      - ".github/workflows/nb-docker-tests.yml"
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'dotnet test filter (passed to dotnet test)'
+        required: false
+        default: 'FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests'
+
+env:
+  NB_DOCKER_IMAGE: nightlybilling-tests
+
+jobs:
+  test:
+    name: Build + run nb tests (Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create NightlyBilling TestResults directory
+        run: |
+          mkdir -p NightlyBilling/TestResults
+
+      - name: Build NightlyBilling Docker image
+        run: |
+          docker build -t "${NB_DOCKER_IMAGE}:ci" -f NightlyBilling/Dockerfile .
+
+      - name: Configure NuGet (optional, for private feeds)
+        shell: bash
+        env:
+          NB_NUGET_CONFIG_BASE64: ${{ secrets.NB_NUGET_CONFIG_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -n "${NB_NUGET_CONFIG_BASE64:-}" ]; then
+            echo "$NB_NUGET_CONFIG_BASE64" | base64 --decode > NightlyBilling/NuGet.ci.config
+            echo "Wrote NightlyBilling/NuGet.ci.config from NB_NUGET_CONFIG_BASE64 secret."
+          else
+            echo "NB_NUGET_CONFIG_BASE64 not set; will try runner's NuGet config (if present)."
+          fi
+
+      - name: Run NightlyBilling tests in Docker
+        id: run_tests
+        run: |
+          set +e
+          FILTER_INPUT="${{ github.event.inputs.filter }}"
+          if [ -z "$FILTER_INPUT" ]; then
+            FILTER_INPUT="FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests"
+          fi
+
+          NUGET_MOUNT_ARGS=""
+          if [ -f "${{ github.workspace }}/NightlyBilling/NuGet.ci.config" ]; then
+            echo "Using CI NuGet config from workspace."
+            NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.ci.config:/root/.nuget/NuGet/NuGet.Config:ro"
+          elif [ -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
+            echo "Using runner NuGet config from $HOME/.nuget/NuGet/NuGet.Config."
+            NUGET_MOUNT_ARGS="-v $HOME/.nuget/NuGet/NuGet.Config:/root/.nuget/NuGet/NuGet.Config:ro"
+          else
+            echo "No NuGet config provided/found; restore will use default sources."
+          fi
+
+          echo "Running NightlyBilling tests with filter: $FILTER_INPUT"
+          docker run --rm \
+            -v "${{ github.workspace }}/NightlyBilling/TestResults:/app/TestResults" \
+            -v "${{ github.workspace }}:/repo" \
+            $NUGET_MOUNT_ARGS \
+            "${NB_DOCKER_IMAGE}:ci" \
+            --filter "$FILTER_INPUT" 2>&1 | tee nb-test-output.log
+
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload NightlyBilling test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightlybilling-test-results
+          path: |
+            NightlyBilling/TestResults
+            nb-test-output.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Fail if tests failed
+        if: steps.run_tests.outputs.exit_code != '0'
+        run: |
+          echo "nb tests failed (exit code: ${{ steps.run_tests.outputs.exit_code }})"
+          exit 1
+

@@ -1,0 +1,9 @@
+## Template only (not executed by GitHub)
+#
+# GitHub Actions only executes workflows from the repo root:
+#   .github/workflows/*.yml
+#
+# This file is a colocated copy/template for the NightlyBilling module.
+# The active workflow is:
+#   .github/workflows/nb-docker-tests.yml
+
