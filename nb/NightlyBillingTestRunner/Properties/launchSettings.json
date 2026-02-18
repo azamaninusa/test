@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NightlyBillingTestRunner": {
+      "commandName": "Project",
+      "commandLineArgs": "-e qa"
+    }
+  }
+}

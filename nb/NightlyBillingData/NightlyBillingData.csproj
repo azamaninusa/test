@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.44" />
+    <PackageReference Include="FluentValidation" Version="11.9.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+    <PackageReference Include="Polly.Core" Version="8.4.1" />
+    <PackageReference Include="VaxCare.Edi.Contracts" Version="2025.5.20.47" />
+    <PackageReference Include="VaxCare.Edi.Transactions" Version="2025.5.20.42" />
+    <PackageReference Include="VaxCare.EdiFabric.Templates" Version="2025.5.20.42" />
+  </ItemGroup>
+
+</Project>

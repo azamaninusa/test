@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="VaxCare.Edi.Contracts" Version="2025.5.20.47" />
+    <PackageReference Include="VaxCare.Edi.Transactions" Version="2025.5.20.42" />
+    <PackageReference Include="VaxCare.EdiFabric.Templates" Version="2025.5.20.42" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NightlyBillingConfigManager\NightlyBillingConfigManager.csproj" />
+    <ProjectReference Include="..\NightlyBillingData\NightlyBillingData.csproj" />
+    <ProjectReference Include="..\NightlyBillingValidator\NightlyBillingValidators.csproj" />
+  </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="https://json.schemastore.org/launchsettings.json" /></VisualStudio></ProjectExtensions>
+
+</Project>
