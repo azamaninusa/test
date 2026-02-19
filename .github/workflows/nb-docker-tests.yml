@@ -3,13 +3,13 @@ name: Build-Test-NightlyBilling (Docker)
 on:
   push:
     branches:
-      - main
+      - docker-gha
     paths:
       - "NightlyBilling/**"
       - ".github/workflows/nb-docker-tests.yml"
   pull_request:
     branches:
-      - main
+      - docker-gha
     paths:
       - "NightlyBilling/**"
       - ".github/workflows/nb-docker-tests.yml"
@@ -32,7 +32,7 @@ jobs:
   test:
     name: Build + run NightlyBilling tests (Docker)
     runs-on:
-      group: linux
+      group: QA
     timeout-minutes: 30
 
     steps:
@@ -132,10 +132,13 @@ jobs:
             FILTER_INPUT="FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests"
           fi
 
+          # Ensure the log file exists so artifact upload never warns.
+          : > nightlybilling-test-output.log
+
           echo "Running NightlyBilling tests with filter: $FILTER_INPUT"
           docker run --rm \
             "${NB_DOCKER_IMAGE}:ci" \
-            --filter "$FILTER_INPUT" 2>&1 | tee nightlybilling-test-output.log
+            --filter "$FILTER_INPUT" 2>&1 | tee -a nightlybilling-test-output.log
 
           EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
