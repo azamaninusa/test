@@ -2,15 +2,17 @@ name: Build-Test-NightlyBilling (Docker)
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - NightlyBilling/**
-      - .github/workflows/nb-docker-tests.yml
+      - "NightlyBilling/**"
+      - ".github/workflows/nb-docker-tests.yml"
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - NightlyBilling/**
-      - .github/workflows/nb-docker-tests.yml
+      - "NightlyBilling/**"
+      - ".github/workflows/nb-docker-tests.yml"
   workflow_dispatch:
     inputs:
       filter:
