@@ -6,13 +6,17 @@ on:
       - docker-gha
     paths:
       - "NightlyBilling/**"
+      - "NightlyBilling*/**"
       - ".github/workflows/nb-docker-tests.yml"
+      - ".github/docker/nightlybilling.Dockerfile"
   pull_request:
     branches:
       - docker-gha
     paths:
       - "NightlyBilling/**"
+      - "NightlyBilling*/**"
       - ".github/workflows/nb-docker-tests.yml"
+      - ".github/docker/nightlybilling.Dockerfile"
   workflow_dispatch:
     inputs:
       filter:
@@ -47,25 +51,23 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Ensure expected folder exists (some runners may check out differently)
-          if [ ! -d NightlyBilling ]; then
-            echo "Error: expected ./NightlyBilling directory but it was not found."
-            echo "Workspace contents:"
-            ls -la
-            exit 1
+          # Determine module root (either ./NightlyBilling or repo root)
+          MODULE_DIR="."
+          if [ -d NightlyBilling ] && [ -f NightlyBilling/NuGet.config ]; then
+            MODULE_DIR="NightlyBilling"
           fi
-          mkdir -p NightlyBilling
+          echo "NightlyBilling module directory: $MODULE_DIR"
 
           # If an Azure Artifacts PAT is available, generate an authenticated NuGet.Config.
           # This avoids depending on runner-global NuGet configuration inside the container.
           if [ -n "${AZURE_DEVOPS_PASSWORD:-}" ]; then
-            echo "AZURE_DEVOPS_PASSWORD provided; generating NightlyBilling/NuGet.auth.config."
+            echo "AZURE_DEVOPS_PASSWORD provided; generating $MODULE_DIR/NuGet.auth.config."
             printf '%s\n' \
               '<?xml version="1.0" encoding="utf-8"?>' \
               '<configuration>' \
               '  <packageSources>' \
               '    <add key="VaxCare" value="https://pkgs.dev.azure.com/VaxCareCorp/Development/_packaging/vaxnuget/nuget/v3/index.json" />' \
-              '    <add key="NuGet" value="https://www.nuget.org/api/v2" />' \
+              '    <add key="NuGet" value="https://api.nuget.org/v3/index.json" />' \
               '  </packageSources>' \
               '  <packageSourceCredentials>' \
               '    <VaxCare>' \
@@ -74,18 +76,18 @@ jobs:
               '    </VaxCare>' \
               '  </packageSourceCredentials>' \
               '</configuration>' \
-              > NightlyBilling/NuGet.auth.config
+              > "$MODULE_DIR/NuGet.auth.config"
             exit 0
           fi
 
           if [ -n "${NB_NUGET_CONFIG_BASE64:-}" ]; then
-            echo "${NB_NUGET_CONFIG_BASE64}" | base64 --decode > NightlyBilling/NuGet.ci.config
-            echo "Wrote NightlyBilling/NuGet.ci.config from NB_NUGET_CONFIG_BASE64 secret."
+            echo "${NB_NUGET_CONFIG_BASE64}" | base64 --decode > "$MODULE_DIR/NuGet.ci.config"
+            echo "Wrote $MODULE_DIR/NuGet.ci.config from NB_NUGET_CONFIG_BASE64 secret."
             exit 0
           fi
 
-          if [ -f NightlyBilling/NuGet.config ]; then
-            echo "Found NightlyBilling/NuGet.config in repo; will mount it into the container."
+          if [ -f "$MODULE_DIR/NuGet.config" ]; then
+            echo "Found $MODULE_DIR/NuGet.config in repo; will use it for restore/build."
             exit 0
           fi
 
@@ -96,13 +98,19 @@ jobs:
         run: |
           set -euo pipefail
 
+          MODULE_DIR="."
+          if [ -d NightlyBilling ] && [ -f NightlyBilling/NuGet.config ]; then
+            MODULE_DIR="NightlyBilling"
+          fi
+          echo "NightlyBilling module directory: $MODULE_DIR"
+
           NUGET_CONFIG_SRC=""
-          if [ -f NightlyBilling/NuGet.auth.config ]; then
-            NUGET_CONFIG_SRC="NightlyBilling/NuGet.auth.config"
-          elif [ -f NightlyBilling/NuGet.ci.config ]; then
-            NUGET_CONFIG_SRC="NightlyBilling/NuGet.ci.config"
-          elif [ -f NightlyBilling/NuGet.config ]; then
-            NUGET_CONFIG_SRC="NightlyBilling/NuGet.config"
+          if [ -f "$MODULE_DIR/NuGet.auth.config" ]; then
+            NUGET_CONFIG_SRC="$MODULE_DIR/NuGet.auth.config"
+          elif [ -f "$MODULE_DIR/NuGet.ci.config" ]; then
+            NUGET_CONFIG_SRC="$MODULE_DIR/NuGet.ci.config"
+          elif [ -f "$MODULE_DIR/NuGet.config" ]; then
+            NUGET_CONFIG_SRC="$MODULE_DIR/NuGet.config"
           elif [ -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
             NUGET_CONFIG_SRC="$HOME/.nuget/NuGet/NuGet.Config"
           fi
@@ -117,9 +125,9 @@ jobs:
 
           DOCKER_BUILDKIT=1 docker build \
             -t "${NB_DOCKER_IMAGE}:ci" \
-            -f NightlyBilling/Dockerfile \
+            -f .github/docker/nightlybilling.Dockerfile \
             $SECRET_ARGS \
-            .
+            "$MODULE_DIR"
 
       - name: Run tests in Docker
         id: run_tests
