@@ -39,14 +39,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Create TestResults directory
-        shell: bash
-        run: mkdir -p NightlyBilling/TestResults
-
-      - name: Build Docker image
-        shell: bash
-        run: docker build -t "${NB_DOCKER_IMAGE}:ci" -f NightlyBilling/Dockerfile .
-
       - name: Configure NuGet (optional)
         shell: bash
         env:
@@ -90,6 +82,36 @@ jobs:
 
           echo "No repo NuGet config and no secrets; will try runner's NuGet config (if present)."
 
+      - name: Build Docker image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          NUGET_CONFIG_SRC=""
+          if [ -f NightlyBilling/NuGet.auth.config ]; then
+            NUGET_CONFIG_SRC="NightlyBilling/NuGet.auth.config"
+          elif [ -f NightlyBilling/NuGet.ci.config ]; then
+            NUGET_CONFIG_SRC="NightlyBilling/NuGet.ci.config"
+          elif [ -f NightlyBilling/NuGet.config ]; then
+            NUGET_CONFIG_SRC="NightlyBilling/NuGet.config"
+          elif [ -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
+            NUGET_CONFIG_SRC="$HOME/.nuget/NuGet/NuGet.Config"
+          fi
+
+          SECRET_ARGS=""
+          if [ -n "$NUGET_CONFIG_SRC" ]; then
+            echo "Using NuGet config for build secret: $NUGET_CONFIG_SRC"
+            SECRET_ARGS="$SECRET_ARGS --secret id=nuget_config,src=$NUGET_CONFIG_SRC"
+          else
+            echo "No NuGet config found; build may fail on private packages."
+          fi
+
+          DOCKER_BUILDKIT=1 docker build \
+            -t "${NB_DOCKER_IMAGE}:ci" \
+            -f NightlyBilling/Dockerfile \
+            $SECRET_ARGS \
+            .
+
       - name: Run tests in Docker
         id: run_tests
         shell: bash
@@ -101,28 +123,8 @@ jobs:
             FILTER_INPUT="FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests"
           fi
 
-          NUGET_MOUNT_ARGS=""
-          if [ -f "${{ github.workspace }}/NightlyBilling/NuGet.auth.config" ]; then
-            echo "Using authenticated NuGet config (NightlyBilling/NuGet.auth.config)."
-            NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.auth.config:/root/.nuget/NuGet/NuGet.Config:ro"
-          elif [ -f "${{ github.workspace }}/NightlyBilling/NuGet.config" ]; then
-            echo "Using repo NuGet config (NightlyBilling/NuGet.config)."
-            NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.config:/root/.nuget/NuGet/NuGet.Config:ro"
-          elif [ -f "${{ github.workspace }}/NightlyBilling/NuGet.ci.config" ]; then
-            echo "Using CI NuGet config from workspace."
-            NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.ci.config:/root/.nuget/NuGet/NuGet.Config:ro"
-          elif [ -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
-            echo "Using runner NuGet config from $HOME/.nuget/NuGet/NuGet.Config."
-            NUGET_MOUNT_ARGS="-v $HOME/.nuget/NuGet/NuGet.Config:/root/.nuget/NuGet/NuGet.Config:ro"
-          else
-            echo "No NuGet config provided/found; restore will use default sources."
-          fi
-
           echo "Running NightlyBilling tests with filter: $FILTER_INPUT"
           docker run --rm \
-            -v "${{ github.workspace }}/NightlyBilling/TestResults:/app/TestResults" \
-            -v "${{ github.workspace }}:/repo" \
-            $NUGET_MOUNT_ARGS \
             "${NB_DOCKER_IMAGE}:ci" \
             --filter "$FILTER_INPUT" 2>&1 | tee nightlybilling-test-output.log
 
@@ -136,7 +138,6 @@ jobs:
         with:
           name: nightlybilling-test-results
           path: |
-            NightlyBilling/TestResults
             nightlybilling-test-output.log
           if-no-files-found: warn
           retention-days: 7

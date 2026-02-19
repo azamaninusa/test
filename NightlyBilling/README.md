@@ -81,57 +81,35 @@ From the **parent repo root** (the folder that contains `NightlyBilling\`):
 ### Build the image
 
 ```powershell
+$env:DOCKER_BUILDKIT=1
 docker build -t nightlybilling-tests:local -f .\NightlyBilling\Dockerfile .
 ```
 
-### Run the container (writes TRX to `NightlyBilling\TestResults`)
+### Run the container
 
 ```powershell
-New-Item -ItemType Directory -Force -Path .\NightlyBilling\TestResults | Out-Null
-
-docker run --rm `
-  -v "${PWD}\NightlyBilling\TestResults:/app/TestResults" `
-  -v "${PWD}:/repo" `
-  nightlybilling-tests:local
+docker run --rm nightlybilling-tests:local
 ```
 
 ### Run with a test filter (optional)
 
 ```powershell
 docker run --rm `
-  -v "${PWD}\NightlyBilling\TestResults:/app/TestResults" `
-  -v "${PWD}:/repo" `
   nightlybilling-tests:local `
   --filter "FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests"
 ```
 
 ### NuGet / Azure Artifacts (self-hosted runners)
 
-If your `NightlyBilling` projects restore from **Azure Artifacts** (private packages), make sure the container can see a working `NuGet.Config`.
+If your `NightlyBilling` projects restore from **Azure Artifacts** (private packages), Docker build needs an authenticated `NuGet.Config`.
 
-Common approach on self-hosted runners: mount the runner’s user-level config:
-
-```powershell
-docker run --rm `
-  -v "${PWD}\NightlyBilling\TestResults:/app/TestResults" `
-  -v "${PWD}:/repo" `
-  -v "$HOME\.nuget\NuGet\NuGet.Config:/root/.nuget/NuGet/NuGet.Config:ro" `
-  nightlybilling-tests:local
-```
-
-### Fixing `PartialChain` / SSL errors when downloading from `nuget.org`
-
-If you see errors like `The remote certificate is invalid ... PartialChain`, your network is likely doing TLS inspection and the container doesn’t trust your company CA.
-
-Export your company root CA to a file (example: `corp-root.crt`) and mount it:
+Common approach: pass your authenticated `NuGet.Config` as a BuildKit secret:
 
 ```powershell
-docker run --rm `
-  -v "${PWD}\NightlyBilling\TestResults:/app/TestResults" `
-  -v "${PWD}:/repo" `
-  -v "${PWD}\corp-root.crt:/tmp/extra-ca.crt:ro" `
-  -e "EXTRA_CA_CERT_PATH=/tmp/extra-ca.crt" `
-  nightlybilling-tests:local
+$env:DOCKER_BUILDKIT=1
+docker build -t nightlybilling-tests:local -f .\NightlyBilling\Dockerfile `
+  --secret id=nuget_config,src="$HOME\.nuget\NuGet\NuGet.Config" `
+  .
 ```
 
 Notes:

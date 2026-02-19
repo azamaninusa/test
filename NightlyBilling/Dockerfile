@@ -1,41 +1,46 @@
+## NightlyBilling test image (no HTML/TRX report generation)
+# syntax=docker/dockerfile:1.7
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0
-
-# This image intentionally does NOT run `dotnet restore` during build.
-# NightlyBilling depends on private packages (e.g. VaxCare.*), so CI should provide a NuGet.config at runtime.
-
-WORKDIR /repo
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /app/TestResults
+WORKDIR /src
 
+# Default NuGet config (sources only). CI can override securely via BuildKit secret `nuget_config`.
+COPY NightlyBilling/NuGet.config ./NightlyBilling/NuGet.config
+RUN mkdir -p /root/.nuget/NuGet && cp ./NightlyBilling/NuGet.config /root/.nuget/NuGet/NuGet.Config
+
+# Copy project files first (better layer caching)
+COPY NightlyBilling/NightlyBillingConfigManager/*.csproj NightlyBilling/NightlyBillingConfigManager/
+COPY NightlyBilling/NightlyBillingData/*.csproj NightlyBilling/NightlyBillingData/
+COPY NightlyBilling/NightlyBillingValidator/*.csproj NightlyBilling/NightlyBillingValidator/
+COPY NightlyBilling/NightlyBillingTestRunner/*.csproj NightlyBilling/NightlyBillingTestRunner/
+COPY NightlyBilling/NightlyBillingUnitTests/*.csproj NightlyBilling/NightlyBillingUnitTests/
+
+# Restore with optional secrets:
+# - `nuget_config`: authenticated NuGet.Config (Azure Artifacts) to avoid baking creds into layers
+RUN --mount=type=secret,id=nuget_config,dst=/root/.nuget/NuGet/NuGet.Config,required=false \
+    dotnet restore NightlyBilling/NightlyBillingUnitTests/NightlyBillingUnitTests.csproj
+
+# Copy full source after restore
+COPY NightlyBilling/ NightlyBilling/
+
+RUN dotnet build -c Release NightlyBilling/NightlyBillingUnitTests/NightlyBillingUnitTests.csproj --no-restore
+
+# Wrapper script similar to the main Dockerfile, but without report generation.
 RUN printf '%s\n' \
   '#!/usr/bin/env bash' \
   'set -euo pipefail' \
   '' \
-  '# Optional: trust a company TLS root CA inside the container.' \
-  '# This is needed on networks that MITM/inspect TLS and causes NuGet "PartialChain" errors.' \
-  'EXTRA_CA_CERT_PATH="${EXTRA_CA_CERT_PATH:-/tmp/extra-ca.crt}"' \
-  'if [ -f "$EXTRA_CA_CERT_PATH" ]; then' \
-  '  echo "Importing extra CA cert from $EXTRA_CA_CERT_PATH"' \
-  '  cp "$EXTRA_CA_CERT_PATH" /usr/local/share/ca-certificates/extra-ca.crt' \
-  '  update-ca-certificates' \
-  'fi' \
-  '' \
-  '# Expect the repo to be mounted at /repo' \
-  'if [ ! -f "/repo/NightlyBilling/NightlyBillingUnitTests/NightlyBillingUnitTests.csproj" ]; then' \
-  '  echo "Expected NightlyBilling project at /repo/NightlyBilling but it was not found."' \
-  '  exit 2' \
-  'fi' \
-  '' \
-  'dotnet test -c Release /repo/NightlyBilling/NightlyBillingUnitTests/NightlyBillingUnitTests.csproj \' \
-  '  --logger "trx;LogFileName=TestResults.trx" \' \
-  '  --results-directory /app/TestResults \' \
+  'dotnet test -c Release NightlyBilling/NightlyBillingUnitTests/NightlyBillingUnitTests.csproj \' \
+  '  --no-build --no-restore \' \
   '  "$@"' \
   > /usr/local/bin/run-nightlybilling-tests.sh \
   && chmod +x /usr/local/bin/run-nightlybilling-tests.sh
 
 ENTRYPOINT ["/usr/local/bin/run-nightlybilling-tests.sh"]
+CMD ["--filter", "FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests"]
 
