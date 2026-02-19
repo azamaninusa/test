@@ -2,29 +2,27 @@ name: Build-Test-NightlyBilling (Docker)
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - "NightlyBilling/**"
-      - ".github/workflows/nb-docker-tests.yml"
+      - NightlyBilling/**
+      - .github/workflows/nb-docker-tests.yml
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - "NightlyBilling/**"
-      - ".github/workflows/nb-docker-tests.yml"
+      - NightlyBilling/**
+      - .github/workflows/nb-docker-tests.yml
   workflow_dispatch:
     inputs:
       filter:
-        description: 'dotnet test filter (passed to dotnet test)'
+        description: dotnet test filter (passed to dotnet test)
         required: false
-        default: 'FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests'
+        default: FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests
 
 permissions:
   id-token: write
   contents: read
   packages: read
-                  
+
 env:
   NB_DOCKER_IMAGE: nightlybilling-tests
 
@@ -36,18 +34,18 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Create NightlyBilling TestResults directory
-        run: |
-          mkdir -p NightlyBilling/TestResults
+      - name: Create TestResults directory
+        shell: bash
+        run: mkdir -p NightlyBilling/TestResults
 
-      - name: Build NightlyBilling Docker image
-        run: |
-          docker build -t "${NB_DOCKER_IMAGE}:ci" -f NightlyBilling/Dockerfile .
+      - name: Build Docker image
+        shell: bash
+        run: docker build -t "${NB_DOCKER_IMAGE}:ci" -f NightlyBilling/Dockerfile .
 
-      - name: Configure NuGet (optional, for private feeds)
+      - name: Configure NuGet (optional)
         shell: bash
         env:
           NB_NUGET_CONFIG_BASE64: ${{ secrets.NB_NUGET_CONFIG_BASE64 }}
@@ -78,22 +76,24 @@ EOF
           fi
 
           if [ -n "${NB_NUGET_CONFIG_BASE64:-}" ]; then
-            echo "$NB_NUGET_CONFIG_BASE64" | base64 --decode > NightlyBilling/NuGet.ci.config
+            echo "${NB_NUGET_CONFIG_BASE64}" | base64 --decode > NightlyBilling/NuGet.ci.config
             echo "Wrote NightlyBilling/NuGet.ci.config from NB_NUGET_CONFIG_BASE64 secret."
             exit 0
           fi
 
-          if [ -f "NightlyBilling/NuGet.config" ]; then
+          if [ -f NightlyBilling/NuGet.config ]; then
             echo "Found NightlyBilling/NuGet.config in repo; will mount it into the container."
             exit 0
           fi
 
           echo "No repo NuGet config and no secrets; will try runner's NuGet config (if present)."
 
-      - name: Run NightlyBilling tests in Docker
+      - name: Run tests in Docker
         id: run_tests
+        shell: bash
         run: |
           set +e
+
           FILTER_INPUT="${{ github.event.inputs.filter }}"
           if [ -z "$FILTER_INPUT" ]; then
             FILTER_INPUT="FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests"
@@ -122,26 +122,26 @@ EOF
             -v "${{ github.workspace }}:/repo" \
             $NUGET_MOUNT_ARGS \
             "${NB_DOCKER_IMAGE}:ci" \
-            --filter "$FILTER_INPUT" 2>&1 | tee nb-test-output.log
+            --filter "$FILTER_INPUT" 2>&1 | tee nightlybilling-test-output.log
 
           EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Upload NightlyBilling test artifacts
+      - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nightlybilling-test-results
           path: |
             NightlyBilling/TestResults
-            nb-test-output.log
+            nightlybilling-test-output.log
           if-no-files-found: warn
           retention-days: 7
 
       - name: Fail if tests failed
         if: steps.run_tests.outputs.exit_code != '0'
+        shell: bash
         run: |
-          echo "nb tests failed (exit code: ${{ steps.run_tests.outputs.exit_code }})"
+          echo "NightlyBilling tests failed (exit code: ${{ steps.run_tests.outputs.exit_code }})"
           exit 1
-
