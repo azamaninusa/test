@@ -47,6 +47,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Ensure expected folder exists (some runners may check out differently)
+          if [ ! -d NightlyBilling ]; then
+            echo "Error: expected ./NightlyBilling directory but it was not found."
+            echo "Workspace contents:"
+            ls -la
+            exit 1
+          fi
+          mkdir -p NightlyBilling
+
           # If an Azure Artifacts PAT is available, generate an authenticated NuGet.Config.
           # This avoids depending on runner-global NuGet configuration inside the container.
           if [ -n "${AZURE_DEVOPS_PASSWORD:-}" ]; then
