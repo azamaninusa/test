@@ -1,13 +1,15 @@
-name: NightlyBilling - Docker Tests
+name: Build-Test-NightlyBilling (Docker)
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
     paths:
       - "NightlyBilling/**"
       - ".github/workflows/nb-docker-tests.yml"
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
     paths:
       - "NightlyBilling/**"
       - ".github/workflows/nb-docker-tests.yml"
@@ -18,13 +20,19 @@ on:
         required: false
         default: 'FullyQualifiedName~NightlyBillingUnitTests.GatherBillableClaimsValidatorTests'
 
+permissions:
+  id-token: write
+  contents: read
+  packages: read
+                  
 env:
   NB_DOCKER_IMAGE: nightlybilling-tests
 
 jobs:
   test:
-    name: Build + run nb tests (Docker)
-    runs-on: ubuntu-latest
+    name: Build + run NightlyBilling tests (Docker)
+    runs-on:
+      group: linux
     timeout-minutes: 30
 
     steps:
@@ -43,14 +51,44 @@ jobs:
         shell: bash
         env:
           NB_NUGET_CONFIG_BASE64: ${{ secrets.NB_NUGET_CONFIG_BASE64 }}
+          AZURE_DEVOPS_PASSWORD: ${{ secrets.AZURE_DEVOPS_PASSWORD }}
         run: |
           set -euo pipefail
+
+          # If an Azure Artifacts PAT is available, generate an authenticated NuGet.Config.
+          # This avoids depending on runner-global NuGet configuration inside the container.
+          if [ -n "${AZURE_DEVOPS_PASSWORD:-}" ]; then
+            echo "AZURE_DEVOPS_PASSWORD provided; generating NightlyBilling/NuGet.auth.config."
+            cat > NightlyBilling/NuGet.auth.config <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="VaxCare" value="https://pkgs.dev.azure.com/VaxCareCorp/Development/_packaging/vaxnuget/nuget/v3/index.json" />
+    <add key="NuGet" value="https://www.nuget.org/api/v2" />
+  </packageSources>
+  <packageSourceCredentials>
+    <VaxCare>
+      <add key="Username" value="AzureDevOps" />
+      <add key="ClearTextPassword" value="${AZURE_DEVOPS_PASSWORD}" />
+    </VaxCare>
+  </packageSourceCredentials>
+</configuration>
+EOF
+            exit 0
+          fi
+
           if [ -n "${NB_NUGET_CONFIG_BASE64:-}" ]; then
             echo "$NB_NUGET_CONFIG_BASE64" | base64 --decode > NightlyBilling/NuGet.ci.config
             echo "Wrote NightlyBilling/NuGet.ci.config from NB_NUGET_CONFIG_BASE64 secret."
-          else
-            echo "NB_NUGET_CONFIG_BASE64 not set; will try runner's NuGet config (if present)."
+            exit 0
           fi
+
+          if [ -f "NightlyBilling/NuGet.config" ]; then
+            echo "Found NightlyBilling/NuGet.config in repo; will mount it into the container."
+            exit 0
+          fi
+
+          echo "No repo NuGet config and no secrets; will try runner's NuGet config (if present)."
 
       - name: Run NightlyBilling tests in Docker
         id: run_tests
@@ -62,7 +100,13 @@ jobs:
           fi
 
           NUGET_MOUNT_ARGS=""
-          if [ -f "${{ github.workspace }}/NightlyBilling/NuGet.ci.config" ]; then
+          if [ -f "${{ github.workspace }}/NightlyBilling/NuGet.auth.config" ]; then
+            echo "Using authenticated NuGet config (NightlyBilling/NuGet.auth.config)."
+            NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.auth.config:/root/.nuget/NuGet/NuGet.Config:ro"
+          elif [ -f "${{ github.workspace }}/NightlyBilling/NuGet.config" ]; then
+            echo "Using repo NuGet config (NightlyBilling/NuGet.config)."
+            NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.config:/root/.nuget/NuGet/NuGet.Config:ro"
+          elif [ -f "${{ github.workspace }}/NightlyBilling/NuGet.ci.config" ]; then
             echo "Using CI NuGet config from workspace."
             NUGET_MOUNT_ARGS="-v ${{ github.workspace }}/NightlyBilling/NuGet.ci.config:/root/.nuget/NuGet/NuGet.Config:ro"
           elif [ -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
