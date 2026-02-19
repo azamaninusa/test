@@ -57,21 +57,21 @@ jobs:
           # This avoids depending on runner-global NuGet configuration inside the container.
           if [ -n "${AZURE_DEVOPS_PASSWORD:-}" ]; then
             echo "AZURE_DEVOPS_PASSWORD provided; generating NightlyBilling/NuGet.auth.config."
-            cat > NightlyBilling/NuGet.auth.config <<EOF
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <add key="VaxCare" value="https://pkgs.dev.azure.com/VaxCareCorp/Development/_packaging/vaxnuget/nuget/v3/index.json" />
-    <add key="NuGet" value="https://www.nuget.org/api/v2" />
-  </packageSources>
-  <packageSourceCredentials>
-    <VaxCare>
-      <add key="Username" value="AzureDevOps" />
-      <add key="ClearTextPassword" value="${AZURE_DEVOPS_PASSWORD}" />
-    </VaxCare>
-  </packageSourceCredentials>
-</configuration>
-EOF
+            printf '%s\n' \
+              '<?xml version="1.0" encoding="utf-8"?>' \
+              '<configuration>' \
+              '  <packageSources>' \
+              '    <add key="VaxCare" value="https://pkgs.dev.azure.com/VaxCareCorp/Development/_packaging/vaxnuget/nuget/v3/index.json" />' \
+              '    <add key="NuGet" value="https://www.nuget.org/api/v2" />' \
+              '  </packageSources>' \
+              '  <packageSourceCredentials>' \
+              '    <VaxCare>' \
+              '      <add key="Username" value="AzureDevOps" />' \
+              "      <add key=\"ClearTextPassword\" value=\"${AZURE_DEVOPS_PASSWORD}\" />" \
+              '    </VaxCare>' \
+              '  </packageSourceCredentials>' \
+              '</configuration>' \
+              > NightlyBilling/NuGet.auth.config
             exit 0
           fi
 
