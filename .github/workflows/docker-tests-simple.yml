@@ -166,29 +166,7 @@ jobs:
 
           export STATUS THEME_COLOR
 
-          payload="$(python3 -c 'import json, os
-env_name=os.environ.get(\"TEST_ENVIRONMENT\",\"Staging\")
-status=os.environ.get(\"STATUS\",\"UNKNOWN\")
-theme=os.environ.get(\"THEME_COLOR\",\"00FF00\")
-facts=[
-  {\"name\":\"Environment\",\"value\":env_name},
-  {\"name\":\"Repo\",\"value\":os.environ.get(\"REPO\",\"\")},
-  {\"name\":\"Branch\",\"value\":os.environ.get(\"REF_NAME\",\"\")},
-  {\"name\":\"Total Tests\",\"value\":os.environ.get(\"TOTAL\",\"unknown\")},
-  {\"name\":\"Passed\",\"value\":os.environ.get(\"PASSED\",\"unknown\")},
-  {\"name\":\"Failed\",\"value\":os.environ.get(\"FAILED\",\"unknown\")},
-  {\"name\":\"Skipped\",\"value\":os.environ.get(\"SKIPPED\",\"unknown\")},
-  {\"name\":\"Run\",\"value\":os.environ.get(\"RUN_URL\",\"\")},
-]
-card={
-  \"@type\":\"MessageCard\",
-  \"@context\":\"http://schema.org/extensions\",
-  \"summary\":\"QA Test Report\",
-  \"themeColor\":theme,
-  \"title\":f\"Automation Test Results ({status})\",
-  \"sections\":[{\"facts\":facts}],
-}
-print(json.dumps(card))')"
+          payload="$(python3 -c 'import json, os; env_name=os.environ.get(\"TEST_ENVIRONMENT\",\"Staging\"); status=os.environ.get(\"STATUS\",\"UNKNOWN\"); theme=os.environ.get(\"THEME_COLOR\",\"00FF00\"); facts=[{\"name\":\"Environment\",\"value\":env_name},{\"name\":\"Repo\",\"value\":os.environ.get(\"REPO\",\"\")},{\"name\":\"Branch\",\"value\":os.environ.get(\"REF_NAME\",\"\")},{\"name\":\"Total Tests\",\"value\":os.environ.get(\"TOTAL\",\"unknown\")},{\"name\":\"Passed\",\"value\":os.environ.get(\"PASSED\",\"unknown\")},{\"name\":\"Failed\",\"value\":os.environ.get(\"FAILED\",\"unknown\")},{\"name\":\"Skipped\",\"value\":os.environ.get(\"SKIPPED\",\"unknown\")},{\"name\":\"Run\",\"value\":os.environ.get(\"RUN_URL\",\"\")}]; card={\"@type\":\"MessageCard\",\"@context\":\"http://schema.org/extensions\",\"summary\":\"QA Test Report\",\"themeColor\":theme,\"title\":f\"Automation Test Results ({status})\",\"sections\":[{\"facts\":facts}]}; print(json.dumps(card))')"
 
           curl -sS -H "Content-Type: application/json" -d "$payload" "$TEAMS_WEBHOOK_URL" >/dev/null
 
