@@ -10,33 +10,34 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0
 # The command "rm -rf /var/lib/apt/lists/*" removes redundant files from a given layer
 
 RUN apt-get update \
-    && apt-get -y install curl \
-    && apt-get -y install wget \
-    && apt-get -y install python3 \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    python3 \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install packages required by Chrome
-RUN apt-get update && apt-get install -y \
-    lsb-release \
-    libgtk-3-0 \
-    libappindicator3-1 \
-    xdg-utils \
-    libxss1 \
-    libnss3 \
-    libnspr4 \
-    libasound2 \
-    libappindicator1 \
-    fonts-liberation \
-    libpango1.0-0 \
-    libpangoxft-1.0-0 \
-    libv4l-0 \
-    libv4lconvert0 \
-    libgl1-mesa-dri \
-    libgl1-mesa-glx \
-    libpulse0 \
-    fonts-symbola \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    lsb-release \
+    libgtk-3-0 \
+    libappindicator3-1 \
+    xdg-utils \
+    libxss1 \
+    libnss3 \
+    libnspr4 \
+    libasound2 \
+    libappindicator1 \
+    fonts-liberation \
+    libpango1.0-0 \
+    libpangoxft-1.0-0 \
+    libv4l-0 \
+    libv4lconvert0 \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx \
+    libpulse0 \
+    fonts-symbola \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy Chrome and ChromeDriver from the Chrome Docker image
 # Selenium images have Chrome in /usr/bin/google-chrome
@@ -52,11 +53,11 @@ COPY --from=chrome-source /usr/lib/x86_64-linux-gnu/libgbm.so.1.0.0 /usr/lib/x86
 
 # Make Chrome and ChromeDriver executable and update library cache
 RUN chmod +x /usr/bin/google-chrome /usr/bin/chromedriver && \
-    ldconfig || true
+  ldconfig || true
 
 # Add chrome user
 RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
-    && mkdir -p /home/chrome/Downloads && chown -R chrome:chrome /home/chrome
+  && mkdir -p /home/chrome/Downloads && chown -R chrome:chrome /home/chrome
 
 # Set working directory
 WORKDIR /app
