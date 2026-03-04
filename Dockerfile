@@ -10,33 +10,33 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0
 # The command "rm -rf /var/lib/apt/lists/*" removes redundant files from a given layer
 
 RUN apt-get update \
-    && apt-get -y install curl \
-    && apt-get -y install wget \
-    && apt-get -y install python3 \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get -y install curl \
+    && apt-get -y install wget \
+    && apt-get -y install python3 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install packages required by Chrome
 RUN apt-get update && apt-get install -y \
-    lsb-release \
-    libgtk-3-0 \
-    libappindicator3-1 \
-    xdg-utils \
-    libxss1 \
-    libnss3 \
-    libnspr4 \
-    libasound2 \
-    libappindicator1 \
-    fonts-liberation \
-    libpango1.0-0 \
-    libpangoxft-1.0-0 \
-    libv4l-0 \
-    libv4lconvert0 \
-    libgl1-mesa-dri \
-    libgl1-mesa-glx \
-    libpulse0 \
-    fonts-symbola \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    lsb-release \
+    libgtk-3-0 \
+    libappindicator3-1 \
+    xdg-utils \
+    libxss1 \
+    libnss3 \
+    libnspr4 \
+    libasound2 \
+    libappindicator1 \
+    fonts-liberation \
+    libpango1.0-0 \
+    libpangoxft-1.0-0 \
+    libv4l-0 \
+    libv4lconvert0 \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx \
+    libpulse0 \
+    fonts-symbola \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy Chrome and ChromeDriver from the Chrome Docker image
 # Selenium images have Chrome in /usr/bin/google-chrome
@@ -52,11 +52,11 @@ COPY --from=chrome-source /usr/lib/x86_64-linux-gnu/libgbm.so.1.0.0 /usr/lib/x86
 
 # Make Chrome and ChromeDriver executable and update library cache
 RUN chmod +x /usr/bin/google-chrome /usr/bin/chromedriver && \
-    ldconfig || true
+    ldconfig || true
 
 # Add chrome user
 RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
-    && mkdir -p /home/chrome/Downloads && chown -R chrome:chrome /home/chrome
+    && mkdir -p /home/chrome/Downloads && chown -R chrome:chrome /home/chrome
 
 # Set working directory
 WORKDIR /app
@@ -110,7 +110,7 @@ cd /app\n\
 # Run tests with TRX report generation\n\
 # Capture exit code so we can still generate report even if tests fail\n\
 echo "========================================="\n\
-echo "  Running tests..."\n\
+echo "  Running tests..."\n\
 echo "========================================="\n\
 TEST_EXIT_CODE=0\n\
 # Run tests with parallel execution support
@@ -122,48 +122,48 @@ dotnet test -c Release --verbosity normal --logger "trx;LogFileName=TestResults.
 # Always generate HTML report from TRX file, regardless of test results\n\
 echo ""\n\
 echo "========================================="\n\
-echo "  Generating HTML report..."\n\
+echo "  Generating HTML report..."\n\
 echo "========================================="\n\
 if [ -f "/app/TestResults/TestResults.trx" ]; then\n\
-    cd /app\n\
-    python3 generate-html-report.py || echo "Warning: Failed to generate HTML report"\n\
-    if [ -f "/app/TestResults/html/TestReport.html" ]; then\n\
-        echo ""\n\
-        echo "✓ HTML report generated successfully!"\n\
-        echo "  Location: /app/TestResults/html/TestReport.html"\n\
-        echo ""\n\
-        echo "========================================="\n\
-        if [ $TEST_EXIT_CODE -eq 0 ]; then\n\
-            echo "  Test Run Complete - All Tests Passed!"\n\
-        else\n\
-            echo "  Test Run Complete - Some Tests Failed!"\n\
-        fi\n\
-        echo "========================================="\n\
-        echo ""\n\
-        # Create a script in TestResults that host can execute to open the report\n\
-        echo "#!/bin/bash\n\
+    cd /app\n\
+    python3 generate-html-report.py || echo "Warning: Failed to generate HTML report"\n\
+    if [ -f "/app/TestResults/html/TestReport.html" ]; then\n\
+        echo ""\n\
+        echo "✓ HTML report generated successfully!"\n\
+        echo "  Location: /app/TestResults/html/TestReport.html"\n\
+        echo ""\n\
+        echo "========================================="\n\
+        if [ $TEST_EXIT_CODE -eq 0 ]; then\n\
+            echo "  Test Run Complete - All Tests Passed!"\n\
+        else\n\
+            echo "  Test Run Complete - Some Tests Failed!"\n\
+        fi\n\
+        echo "========================================="\n\
+        echo ""\n\
+        # Create a script in TestResults that host can execute to open the report\n\
+        echo "#!/bin/bash\n\
 # Auto-generated script to open test report\n\
 if [[ \"$OSTYPE\" == \"linux-gnu\"* ]]; then\n\
-    xdg-open \"$(dirname \"$0\")/html/TestReport.html\" 2>/dev/null\n\
+    xdg-open \"$(dirname \"$0\")/html/TestReport.html\" 2>/dev/null\n\
 elif [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n\
-    open \"$(dirname \"$0\")/html/TestReport.html\"\n\
+    open \"$(dirname \"$0\")/html/TestReport.html\"\n\
 elif [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" ]]; then\n\
-    start \"$(dirname \"$0\")/html/TestReport.html\"\n\
+    start \"$(dirname \"$0\")/html/TestReport.html\"\n\
 else\n\
-    echo \"Please open the report manually: $(dirname \"$0\")/html/TestReport.html\"\n\
+    echo \"Please open the report manually: $(dirname \"$0\")/html/TestReport.html\"\n\
 fi\n\
 " > /app/TestResults/open-report.sh\n\
-        chmod +x /app/TestResults/open-report.sh\n\
-        echo "To open the report, run from host:"\n\
-        echo "  ./TestResults/open-report.sh"\n\
-        echo "  (or macOS: open TestResults/html/TestReport.html)"\n\
-        echo "  (or Linux: xdg-open TestResults/html/TestReport.html)"\n\
-        echo ""\n\
-    else\n\
-        echo "Warning: HTML report file not found after generation"\n\
-    fi\n\
+        chmod +x /app/TestResults/open-report.sh\n\
+        echo "To open the report, run from host:"\n\
+        echo "  ./TestResults/open-report.sh"\n\
+        echo "  (or macOS: open TestResults/html/TestReport.html)"\n\
+        echo "  (or Linux: xdg-open TestResults/html/TestReport.html)"\n\
+        echo ""\n\
+    else\n\
+        echo "Warning: HTML report file not found after generation"\n\
+    fi\n\
 else\n\
-    echo "Warning: TestResults.trx not found, skipping HTML report generation"\n\
+    echo "Warning: TestResults.trx not found, skipping HTML report generation"\n\
 fi\n\
 \n\
 # Exit with the original test exit code so container status reflects test results\n\
@@ -173,4 +173,4 @@ exit $TEST_EXIT_CODE\n\
 # Selenium 4.x will automatically use selenium-manager to download the correct ChromeDriver
 # Set entrypoint to run tests and generate HTML report
 ENTRYPOINT ["/app/run-tests-and-report.sh"]
-CMD ["--filter", "FullyQualifiedName~GoogleSearchTest"]
+CMD []

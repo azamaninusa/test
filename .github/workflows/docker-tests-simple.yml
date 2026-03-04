@@ -1,140 +1,74 @@
-name: Docker Tests - Simple
+name: Docker Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [docker-gha]
   pull_request:
-    branches: [ main, develop ]
+    branches: [docker-gha]
   workflow_dispatch:
+  schedule:
+    - cron: "00 23 * * 1-5"
 
 env:
   DOCKER_IMAGE: vaxcare-tests
+  TEST_ENVIRONMENT: Staging
 
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on:
+      group: QA
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Show current time (runner + UTC)
+        shell: bash
         run: |
-          docker build -t ${{ env.DOCKER_IMAGE }}:latest .
+          echo "Runner local now: $(date)"
+          echo "UTC now:          $(date -u)"
+          echo "New York now:     $(TZ=America/New_York date)"
+          echo "TZ env:           ${TZ:-<not set>}"
+
+      - name: Build Docker image
+        shell: bash
+        run: |
+          docker build -t "${{ env.DOCKER_IMAGE }}:latest" .
 
       - name: Create test results directory
+        shell: bash
         run: |
           mkdir -p TestResults/screenshots TestResults/html
           chmod -R 777 TestResults || true
-          echo "Created TestResults directory structure"
           ls -la TestResults/ || true
 
       - name: Run tests
         id: run_tests
+        shell: bash
         run: |
-          echo "Running tests in Docker..."
-          echo "Volume mount: ${{ github.workspace }}/TestResults -> /app/TestResults"
-          echo "Checking host directory before Docker run:"
-          ls -la TestResults/ || echo "TestResults not found on host"
-          echo ""
-          echo "=== Running tests (output will show screenshot capture attempts) ==="
-          # Run tests and capture exit code
-          set +e  # Don't exit on error immediately
+          set +e
           docker run --rm \
             --name vaxcare-tests \
             -v "${{ github.workspace }}/TestResults:/app/TestResults:rw" \
-            ${{ env.DOCKER_IMAGE }}:latest \
-            --filter "FullyQualifiedName~GoogleSearchTest" 2>&1 | tee test-output.log
-          TEST_EXIT_CODE=${PIPESTATUS[0]}  # Get exit code from docker run (not tee)
-          set -e  # Re-enable exit on error
-          
+            "${{ env.DOCKER_IMAGE }}:latest" 2>&1 | tee test-output.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+
+          echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> "$GITHUB_OUTPUT"
           echo "Docker run exit code: $TEST_EXIT_CODE"
-          echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
-          echo ""
-          echo "=== Checking for screenshot-related messages in test output ==="
-          grep -i "screenshot" test-output.log || echo "No screenshot messages found in output"
-          echo ""
-          echo "=== Checking for screenshot errors ==="
-          grep -i "failed to capture\|screenshot.*fail\|driver.*null" test-output.log || echo "No screenshot errors found"
-          echo ""
-          echo "=== Checking test failure messages ==="
-          grep -i "test failed\|exception\|error" test-output.log | head -20 || echo "No failure messages found"
-          echo ""
-          echo "Docker container finished"
-          echo "Checking host directory after Docker run:"
-          ls -la TestResults/ || echo "TestResults not found on host"
-          ls -la TestResults/screenshots/ || echo "Screenshots directory not found"
-
-      - name: Verify Docker container paths
-        if: always()
-        run: |
-          echo "=== Verifying paths inside container ==="
-          # Check if /app/TestResults exists and is writable
-          docker run --rm \
-            -v "${{ github.workspace }}/TestResults:/app/TestResults:rw" \
-            ${{ env.DOCKER_IMAGE }}:latest \
-            sh -c "
-              echo 'Checking /app/TestResults directory:'
-              ls -la /app/TestResults/ || echo 'Directory not found'
-              echo ''
-              echo 'Checking /app/TestResults/screenshots:'
-              ls -la /app/TestResults/screenshots/ 2>&1 || echo 'Screenshots directory not found'
-              echo ''
-              echo 'Testing write permissions:'
-              touch /app/TestResults/screenshots/test-write.txt 2>&1 && echo 'Write test: SUCCESS' || echo 'Write test: FAILED'
-              rm -f /app/TestResults/screenshots/test-write.txt 2>&1
-              echo ''
-              echo 'Checking if Directory.Exists would find /app/TestResults:'
-              echo 'Path exists check would return: true (if directory exists)'
-            " || true
-
-      - name: Check screenshots after test
-        if: always()
-        run: |
-          echo "=== Checking TestResults directory on host ==="
-          ls -la TestResults/ || echo "TestResults directory not found"
-          echo ""
-          echo "=== Checking screenshots directory ==="
-          if [ -d "TestResults/screenshots" ]; then
-            echo "Screenshots directory exists"
-            echo "Directory permissions:"
-            ls -ld TestResults/screenshots/
-            echo "Directory contents:"
-            ls -la TestResults/screenshots/ || echo "Cannot list screenshots directory"
-            echo ""
-            echo "=== Searching for PNG files ==="
-            find TestResults/screenshots -type f -name "*.png" 2>/dev/null || echo "No PNG files found"
-            SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
-            echo "Screenshot count: $SCREENSHOT_COUNT"
-            if [ "$SCREENSHOT_COUNT" -eq 0 ]; then
-              echo "WARNING: No screenshots found!"
-              echo "This could mean:"
-              echo "1. Test passed (screenshots only captured on failure)"
-              echo "2. Screenshot capture failed silently"
-              echo "3. Volume mount issue"
-            fi
-          else
-            echo "Screenshots directory does not exist"
-            echo "Creating it now..."
-            mkdir -p TestResults/screenshots
-            ls -la TestResults/ || true
-          fi
 
       - name: Check screenshots
         if: always()
         id: check_screenshots
+        shell: bash
         run: |
           mkdir -p TestResults/screenshots
-          SCREENSHOT_COUNT=$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")
-          echo "Found $SCREENSHOT_COUNT screenshot(s)"
+          SCREENSHOT_COUNT="$(find TestResults/screenshots -type f -name "*.png" 2>/dev/null | wc -l || echo "0")"
           if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
-            echo "has_screenshots=true" >> $GITHUB_OUTPUT
-            echo "Screenshots found:"
-            find TestResults/screenshots -type f -name "*.png" | head -10
+            echo "has_screenshots=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_screenshots=false" >> $GITHUB_OUTPUT
-            echo "No screenshots found. Checking directory contents:"
-            ls -la TestResults/screenshots/ || echo "Directory is empty or inaccessible"
+            echo "has_screenshots=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Upload test results
@@ -145,7 +79,6 @@ jobs:
           path: TestResults
           retention-days: 7
           if-no-files-found: ignore
-          compression-level: 6
 
       - name: Upload screenshots
         if: always() && steps.check_screenshots.outputs.has_screenshots == 'true'
@@ -155,85 +88,113 @@ jobs:
           path: TestResults/screenshots
           retention-days: 7
           if-no-files-found: warn
-          compression-level: 6
 
-      - name: Check test results
+      - name: Parse TRX + pass/fail summary
         if: always()
         id: check_test_results
+        shell: bash
         run: |
+          TRX="TestResults/TestResults.trx"
           TEST_EXIT_CODE="${{ steps.run_tests.outputs.TEST_EXIT_CODE }}"
-          echo "Test exit code: $TEST_EXIT_CODE"
-          
-          # Check if TRX file exists and parse it for failures
-          if [ -f "TestResults/TestResults.trx" ]; then
-            echo "TRX file found, checking for test failures..."
-            # Count failed tests in TRX file
-            FAILED_COUNT=$(grep -o 'outcome="Failed"' TestResults/TestResults.trx | wc -l || echo "0")
-            echo "Failed test count from TRX: $FAILED_COUNT"
-            
-            if [ "$FAILED_COUNT" -gt 0 ]; then
-              echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
-              echo "❌ Tests failed: $FAILED_COUNT test(s) failed"
-            else
-              echo "TESTS_FAILED=false" >> $GITHUB_OUTPUT
-              echo "✅ All tests passed"
-            fi
+
+          TOTAL="unknown"
+          PASSED="unknown"
+          FAILED="unknown"
+          SKIPPED="unknown"
+          TESTS_FAILED="false"
+
+          if [ -f "$TRX" ]; then
+            TOTAL="$(grep -c '<UnitTestResult' "$TRX" || echo "0")"
+            PASSED="$(grep -o 'outcome="Passed"' "$TRX" | wc -l || echo "0")"
+            FAILED="$(grep -o 'outcome="Failed"' "$TRX" | wc -l || echo "0")"
+            SKIPPED="$(grep -oE 'outcome="(NotExecuted|Skipped)"' "$TRX" | wc -l || echo "0")"
+            if [ "$FAILED" -gt 0 ]; then TESTS_FAILED="true"; fi
           else
-            echo "TRX file not found"
-            # If docker run failed and no TRX file, tests definitely failed
-            if [ "$TEST_EXIT_CODE" != "0" ]; then
-              echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
-              echo "❌ Tests failed: Docker run exited with code $TEST_EXIT_CODE"
-            else
-              echo "TESTS_FAILED=false" >> $GITHUB_OUTPUT
-            fi
+            if [ "$TEST_EXIT_CODE" != "0" ]; then TESTS_FAILED="true"; fi
           fi
 
-      - name: Generate test summary
+          echo "TESTS_FAILED=$TESTS_FAILED" >> "$GITHUB_OUTPUT"
+          echo "TOTAL=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "PASSED=$PASSED" >> "$GITHUB_OUTPUT"
+          echo "FAILED=$FAILED" >> "$GITHUB_OUTPUT"
+          echo "SKIPPED=$SKIPPED" >> "$GITHUB_OUTPUT"
+
+      - name: Write GitHub summary (pass/fail only)
         if: always()
+        shell: bash
         run: |
-          echo "# 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f "TestResults/TestResults.trx" ]; then
-            # Parse TRX file to extract test results
-            TOTAL_TESTS=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="[^"]*"' | wc -l || echo "0")
-            PASSED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Passed"' | wc -l || echo "0")
-            FAILED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="Failed"' | wc -l || echo "0")
-            SKIPPED_COUNT=$(grep '<UnitTestResult' TestResults/TestResults.trx | grep -oE 'outcome="(NotExecuted|Skipped)"' | wc -l || echo "0")
-            
-            echo "## Test Statistics" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| ✅ Passed | $PASSED_COUNT |" >> $GITHUB_STEP_SUMMARY
-            echo "| ❌ Failed | $FAILED_COUNT |" >> $GITHUB_STEP_SUMMARY
-            if [ "$SKIPPED_COUNT" -gt 0 ]; then
-              echo "| ⏭️ Skipped | $SKIPPED_COUNT |" >> $GITHUB_STEP_SUMMARY
-            fi
-            echo "| 📊 Total | $TOTAL_TESTS |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            # Calculate success rate
-            if [ "$TOTAL_TESTS" -gt 0 ]; then
-              SUCCESS_RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSED_COUNT / $TOTAL_TESTS) * 100}")
-              echo "**Success Rate: ${SUCCESS_RATE}%**" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "## ⚠️ Test Results Not Available" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "TRX file not found. Cannot generate test summary." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            TEST_EXIT_CODE="${{ steps.run_tests.outputs.TEST_EXIT_CODE }}"
-            if [ "$TEST_EXIT_CODE" != "0" ]; then
-              echo "Docker run exited with code: \`$TEST_EXIT_CODE\`" >> $GITHUB_STEP_SUMMARY
-            fi
+          STATUS="PASSED"
+          if [ "${{ steps.check_test_results.outputs.TESTS_FAILED }}" = "true" ]; then
+            STATUS="FAILED"
           fi
+
+          {
+            echo "## Test Summary"
+            echo ""
+            echo "- Status: **$STATUS**"
+            echo "- Total: ${{ steps.check_test_results.outputs.TOTAL }}"
+            echo "- Passed: ${{ steps.check_test_results.outputs.PASSED }}"
+            echo "- Failed: ${{ steps.check_test_results.outputs.FAILED }}"
+            echo "- Skipped: ${{ steps.check_test_results.outputs.SKIPPED }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Microsoft Teams (pass/fail only)
+        if: always()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TESTS_FAILED: ${{ steps.check_test_results.outputs.TESTS_FAILED }}
+          TOTAL: ${{ steps.check_test_results.outputs.TOTAL }}
+          PASSED: ${{ steps.check_test_results.outputs.PASSED }}
+          FAILED: ${{ steps.check_test_results.outputs.FAILED }}
+          SKIPPED: ${{ steps.check_test_results.outputs.SKIPPED }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if [ -z "${TEAMS_WEBHOOK_URL:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL secret not set; skipping."
+            exit 0
+          fi
+
+          STATUS="PASSED"
+          THEME_COLOR="2EB886"
+          if [ "${TESTS_FAILED:-false}" = "true" ]; then
+            STATUS="FAILED"
+            THEME_COLOR="A30200"
+          fi
+
+          export STATUS THEME_COLOR
+
+          payload="$(python3 -c 'import json, os
+env_name=os.environ.get(\"TEST_ENVIRONMENT\",\"Staging\")
+status=os.environ.get(\"STATUS\",\"UNKNOWN\")
+theme=os.environ.get(\"THEME_COLOR\",\"00FF00\")
+facts=[
+  {\"name\":\"Environment\",\"value\":env_name},
+  {\"name\":\"Repo\",\"value\":os.environ.get(\"REPO\",\"\")},
+  {\"name\":\"Branch\",\"value\":os.environ.get(\"REF_NAME\",\"\")},
+  {\"name\":\"Total Tests\",\"value\":os.environ.get(\"TOTAL\",\"unknown\")},
+  {\"name\":\"Passed\",\"value\":os.environ.get(\"PASSED\",\"unknown\")},
+  {\"name\":\"Failed\",\"value\":os.environ.get(\"FAILED\",\"unknown\")},
+  {\"name\":\"Skipped\",\"value\":os.environ.get(\"SKIPPED\",\"unknown\")},
+  {\"name\":\"Run\",\"value\":os.environ.get(\"RUN_URL\",\"\")},
+]
+card={
+  \"@type\":\"MessageCard\",
+  \"@context\":\"http://schema.org/extensions\",
+  \"summary\":\"QA Test Report\",
+  \"themeColor\":theme,
+  \"title\":f\"Automation Test Results ({status})\",
+  \"sections\":[{\"facts\":facts}],
+}
+print(json.dumps(card))')"
+
+          curl -sS -H "Content-Type: application/json" -d "$payload" "$TEAMS_WEBHOOK_URL" >/dev/null
 
       - name: Fail workflow if tests failed
         if: steps.check_test_results.outputs.TESTS_FAILED == 'true'
+        shell: bash
         run: |
           echo "❌ Test failures detected. Failing workflow."
           exit 1
-
