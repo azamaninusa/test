@@ -7,7 +7,8 @@ using VaxCare.Pages.Login;
 using Xunit.Abstractions;
 
 namespace VaxCare.Tests.DataEntry
-{
+{   
+    [Trait("Category", "Regression")]
     public class InsuranceMappingRegression : BaseTest, IClassFixture<SalesDbFixture>
     {
         private readonly SalesDbFixture _salesDbFixture;

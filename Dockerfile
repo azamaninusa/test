@@ -99,76 +99,13 @@ ENV DISPLAY=:99
 # Create reports directory, HTML subdirectory, and screenshots directory
 RUN mkdir -p /app/TestResults/html /app/TestResults/screenshots
 
-# Create wrapper script to run tests and generate HTML report
-# This script ensures HTML report is generated regardless of test pass/fail status
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-# Ensure we are in the correct directory\n\
-cd /app\n\
-\n\
-# Run tests with TRX report generation\n\
-# Capture exit code so we can still generate report even if tests fail\n\
-echo "========================================="\n\
-echo "  Running tests..."\n\
-echo "========================================="\n\
-TEST_EXIT_CODE=0\n\
-# Run tests with parallel execution support
-# XUnit parallel execution is controlled by .csproj settings
-# You can override with: --parallel or --no-parallel
-# Use -- to pass additional dotnet test arguments
-dotnet test -c Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory /app/TestResults "$@" || TEST_EXIT_CODE=$?\n\
-\n\
-# Always generate HTML report from TRX file, regardless of test results\n\
-echo ""\n\
-echo "========================================="\n\
-echo "  Generating HTML report..."\n\
-echo "========================================="\n\
-if [ -f "/app/TestResults/TestResults.trx" ]; then\n\
-    cd /app\n\
-    python3 generate-html-report.py || echo "Warning: Failed to generate HTML report"\n\
-    if [ -f "/app/TestResults/html/TestReport.html" ]; then\n\
-        echo ""\n\
-        echo "✓ HTML report generated successfully!"\n\
-        echo "  Location: /app/TestResults/html/TestReport.html"\n\
-        echo ""\n\
-        echo "========================================="\n\
-        if [ $TEST_EXIT_CODE -eq 0 ]; then\n\
-            echo "  Test Run Complete - All Tests Passed!"\n\
-        else\n\
-            echo "  Test Run Complete - Some Tests Failed!"\n\
-        fi\n\
-        echo "========================================="\n\
-        echo ""\n\
-        # Create a script in TestResults that host can execute to open the report\n\
-        echo "#!/bin/bash\n\
-# Auto-generated script to open test report\n\
-if [[ \"$OSTYPE\" == \"linux-gnu\"* ]]; then\n\
-    xdg-open \"$(dirname \"$0\")/html/TestReport.html\" 2>/dev/null\n\
-elif [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n\
-    open \"$(dirname \"$0\")/html/TestReport.html\"\n\
-elif [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" ]]; then\n\
-    start \"$(dirname \"$0\")/html/TestReport.html\"\n\
-else\n\
-    echo \"Please open the report manually: $(dirname \"$0\")/html/TestReport.html\"\n\
-fi\n\
-" > /app/TestResults/open-report.sh\n\
-        chmod +x /app/TestResults/open-report.sh\n\
-        echo "To open the report, run from host:"\n\
-        echo "  ./TestResults/open-report.sh"\n\
-        echo "  (or macOS: open TestResults/html/TestReport.html)"\n\
-        echo "  (or Linux: xdg-open TestResults/html/TestReport.html)"\n\
-        echo ""\n\
-    else\n\
-        echo "Warning: HTML report file not found after generation"\n\
-    fi\n\
-else\n\
-    echo "Warning: TestResults.trx not found, skipping HTML report generation"\n\
-fi\n\
-\n\
-# Exit with the original test exit code so container status reflects test results\n\
-exit $TEST_EXIT_CODE\n\
-' > /app/run-tests-and-report.sh && chmod +x /app/run-tests-and-report.sh
+# Default xUnit "tag" (Trait) filter used when no args are provided.
+# Override at runtime with: docker run ... -e TEST_FILTER="Category=Smoke"
+ENV TEST_FILTER="Category=Regression"
+
+# Copy wrapper script to run tests and generate HTML report
+COPY run-tests-and-report.sh /app/run-tests-and-report.sh
+RUN chmod +x /app/run-tests-and-report.sh
 
 # Selenium 4.x will automatically use selenium-manager to download the correct ChromeDriver
 # Set entrypoint to run tests and generate HTML report
