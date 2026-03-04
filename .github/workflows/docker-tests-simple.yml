@@ -47,6 +47,7 @@ jobs:
         id: run_tests
         shell: bash
         run: |
+          START_TS="$(date +%s)"
           set +e
           docker run --rm \
             --name vaxcare-tests \
@@ -54,9 +55,15 @@ jobs:
             "${{ env.DOCKER_IMAGE }}:latest" 2>&1 | tee test-output.log
           TEST_EXIT_CODE=${PIPESTATUS[0]}
           set -e
+          END_TS="$(date +%s)"
+          DURATION_SECONDS="$((END_TS - START_TS))"
+          DURATION_MINUTES="$(awk -v s="$DURATION_SECONDS" 'BEGIN { printf "%.1f", s/60 }')"
 
           echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> "$GITHUB_OUTPUT"
+          echo "TEST_DURATION_SECONDS=$DURATION_SECONDS" >> "$GITHUB_OUTPUT"
+          echo "TEST_DURATION_MINUTES=$DURATION_MINUTES" >> "$GITHUB_OUTPUT"
           echo "Docker run exit code: $TEST_EXIT_CODE"
+          echo "Test duration: ${DURATION_MINUTES} min (${DURATION_SECONDS} sec)"
 
       - name: Check screenshots
         if: always()
@@ -104,10 +111,11 @@ jobs:
           TESTS_FAILED="false"
 
           if [ -f "$TRX" ]; then
-            TOTAL="$(grep -c '<UnitTestResult' "$TRX" || true)"
-            PASSED="$(grep -o 'outcome="Passed"' "$TRX" | wc -l | tr -d '[:space:]' || true)"
-            FAILED="$(grep -o 'outcome="Failed"' "$TRX" | wc -l | tr -d '[:space:]' || true)"
-            SKIPPED="$(grep -oE 'outcome="(NotExecuted|Skipped)"' "$TRX" | wc -l | tr -d '[:space:]' || true)"
+            # Count occurrences (not lines), since TRX may have multiple results per line.
+            TOTAL="$(grep -o '<UnitTestResult' "$TRX" | wc -l | tr -d '[:space:]' || true)"
+            PASSED="$(grep -oE '<UnitTestResult[^>]*outcome="Passed"' "$TRX" | wc -l | tr -d '[:space:]' || true)"
+            FAILED="$(grep -oE '<UnitTestResult[^>]*outcome="Failed"' "$TRX" | wc -l | tr -d '[:space:]' || true)"
+            SKIPPED="$(grep -oE '<UnitTestResult[^>]*outcome="(NotExecuted|Skipped)"' "$TRX" | wc -l | tr -d '[:space:]' || true)"
             if [ "$FAILED" -gt 0 ]; then TESTS_FAILED="true"; fi
           else
             if [ "$TEST_EXIT_CODE" != "0" ]; then TESTS_FAILED="true"; fi
@@ -132,6 +140,7 @@ jobs:
             echo "## Test Summary"
             echo ""
             echo "- Status: **$STATUS**"
+            echo "- Duration (min): ${{ steps.run_tests.outputs.TEST_DURATION_MINUTES }}"
             echo "- Total: ${{ steps.check_test_results.outputs.TOTAL }}"
             echo "- Passed: ${{ steps.check_test_results.outputs.PASSED }}"
             echo "- Failed: ${{ steps.check_test_results.outputs.FAILED }}"
@@ -143,6 +152,7 @@ jobs:
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TESTS_FAILED: ${{ steps.check_test_results.outputs.TESTS_FAILED }}
+          DURATION_MINUTES: ${{ steps.run_tests.outputs.TEST_DURATION_MINUTES }}
           TOTAL: ${{ steps.check_test_results.outputs.TOTAL }}
           PASSED: ${{ steps.check_test_results.outputs.PASSED }}
           FAILED: ${{ steps.check_test_results.outputs.FAILED }}
@@ -166,7 +176,7 @@ jobs:
 
           export STATUS THEME_COLOR
 
-          payload="$(python3 -c 'import json, os; env_name=os.environ.get("TEST_ENVIRONMENT","Staging"); status=os.environ.get("STATUS","UNKNOWN"); theme=os.environ.get("THEME_COLOR","00FF00"); facts=[{"name":"Environment","value":env_name},{"name":"Repo","value":os.environ.get("REPO","")},{"name":"Branch","value":os.environ.get("REF_NAME","")},{"name":"Total Tests","value":os.environ.get("TOTAL","unknown")},{"name":"Passed","value":os.environ.get("PASSED","unknown")},{"name":"Failed","value":os.environ.get("FAILED","unknown")},{"name":"Skipped","value":os.environ.get("SKIPPED","unknown")},{"name":"Run","value":os.environ.get("RUN_URL","")}]; card={"@type":"MessageCard","@context":"http://schema.org/extensions","summary":"QA Test Report","themeColor":theme,"title":f"Automation Test Results ({status})","sections":[{"facts":facts}]}; print(json.dumps(card))')"
+          payload="$(python3 -c 'import json, os; env_name=os.environ.get("TEST_ENVIRONMENT","Staging"); status=os.environ.get("STATUS","UNKNOWN"); theme=os.environ.get("THEME_COLOR","00FF00"); facts=[{"name":"Environment","value":env_name},{"name":"Repo","value":os.environ.get("REPO","")},{"name":"Branch","value":os.environ.get("REF_NAME","")},{"name":"Duration (min)","value":os.environ.get("DURATION_MINUTES","unknown")},{"name":"Total Tests","value":os.environ.get("TOTAL","unknown")},{"name":"Passed","value":os.environ.get("PASSED","unknown")},{"name":"Failed","value":os.environ.get("FAILED","unknown")},{"name":"Skipped","value":os.environ.get("SKIPPED","unknown")},{"name":"Run","value":os.environ.get("RUN_URL","")}]; card={"@type":"MessageCard","@context":"http://schema.org/extensions","summary":"QA Test Report","themeColor":theme,"title":f"Automation Test Results ({status})","sections":[{"facts":facts}]}; print(json.dumps(card))')"
 
           curl -sS -H "Content-Type: application/json" -d "$payload" "$TEAMS_WEBHOOK_URL" >/dev/null
 
